@@ -7,6 +7,7 @@ import { AppliedDiscountInfo } from '../../discounts/discount.schema';
 
 export interface ProductQuery {
   q?: string;
+  qLike?: string;
   category?: string;
   manufacturerId?: string | string[];
   countryId?: string | string[];
@@ -29,6 +30,7 @@ export class ProductsService {
   async findAll(query: ProductQuery & { opt?: Record<string, string[]> }) {
     const {
       q,
+      qLike,
       category,
       manufacturerId,
       countryId,
@@ -51,6 +53,13 @@ export class ProductsService {
 
     if (q && q.trim().length > 0) {
       filter.$text = { $search: q.trim() };
+    }
+
+    if (qLike && qLike.trim().length > 0) {
+      const rx = new RegExp(this.escapeRegex(qLike.trim()), 'i');
+      andClauses.push({
+        $or: [{ title: rx }, { slug: rx }, { description: rx }, { 'variants.sku': rx }],
+      } as unknown as ProductFilter);
     }
 
     if (category) {
@@ -196,6 +205,10 @@ export class ProductsService {
       else obj[f] = 1;
     }
     return obj;
+  }
+
+  private escapeRegex(input: string): string {
+    return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 }
 

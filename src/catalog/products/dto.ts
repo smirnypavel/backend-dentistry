@@ -23,6 +23,14 @@ export class FindProductsQueryDto {
   @IsString()
   q?: string;
 
+  @ApiPropertyOptional({
+    description:
+      'Case-insensitive substring search by title/slug/description/sku (live search). Escaped as literal.',
+  })
+  @IsOptional()
+  @IsString()
+  qLike?: string;
+
   @ApiPropertyOptional({ description: 'Category ID (ObjectId)' })
   @IsOptional()
   @IsString()

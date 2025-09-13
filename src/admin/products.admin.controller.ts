@@ -431,6 +431,14 @@ class AdminListProductsQueryDto {
   @IsString()
   q?: string;
 
+  @ApiPropertyOptional({
+    description:
+      'Case-insensitive substring search (title, slug, description, variants.sku). Useful for live search/autocomplete.',
+  })
+  @IsOptional()
+  @IsString()
+  qLike?: string;
+
   @ApiPropertyOptional({ description: 'Category ID (ObjectId)' })
   @IsOptional()
   @IsString()
@@ -505,6 +513,27 @@ class AdminListProductsQueryDto {
   opt?: Record<string, string[]>;
 }
 
+class AdminAutocompleteQueryDto {
+  @ApiPropertyOptional({ description: 'Full-text search query (uses Mongo text index)' })
+  @IsOptional()
+  @IsString()
+  q?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Case-insensitive substring search (title, slug, description, variants.sku). Recommended for live typeahead.',
+  })
+  @IsOptional()
+  @IsString()
+  qLike?: string;
+
+  @ApiPropertyOptional({ default: 10, minimum: 1, maximum: 20 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  limit?: number = 10;
+}
+
 function parseSort(sort?: string): Record<string, 1 | -1> | undefined {
   if (!sort) return undefined;
   const result: Record<string, 1 | -1> = {};
@@ -516,6 +545,10 @@ function parseSort(sort?: string): Record<string, 1 | -1> | undefined {
     else result[part] = 1;
   }
   return Object.keys(result).length ? result : undefined;
+}
+
+function escapeRegex(input: string): string {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 // Basic transliteration for Russian letters to ASCII approximations
@@ -626,6 +659,92 @@ async function ensureUniqueSlugExcludingId(
 export class AdminProductsController {
   constructor(@InjectModel(Product.name) private readonly model: Model<ProductDocument>) {}
 
+  @Get('autocomplete')
+  @ApiOperation({ summary: 'Autocomplete products (minimal fields for typeahead)' })
+  @ApiOkResponse({
+    description: 'Array of lightweight matches',
+    schema: {
+      example: [
+        {
+          _id: '665f1a2b3c4d5e6f7a8b9c0d',
+          title: 'Композит универсальный',
+          slug: 'kompozit-universalnyj',
+          priceMin: 350,
+          priceMax: 480,
+          matchedSkus: ['UC-1', 'UC-2'],
+        },
+      ],
+    },
+  })
+  async autocomplete(@Query() query: AdminAutocompleteQueryDto) {
+    const { q, qLike } = query;
+    let { limit = 10 } = query;
+    if (!Number.isFinite(limit) || limit <= 0) limit = 10;
+    if (limit > 20) limit = 20;
+
+    const filter: Record<string, unknown> = {};
+    const andClauses: Record<string, unknown>[] = [];
+    if (q) filter.$text = { $search: q };
+    let rx: RegExp | undefined;
+    if (qLike && qLike.trim()) {
+      rx = new RegExp(escapeRegex(qLike.trim()), 'i');
+      andClauses.push({
+        $or: [{ title: rx }, { slug: rx }, { description: rx }, { 'variants.sku': rx }],
+      });
+    }
+    const finalFilter = andClauses.length ? { $and: [filter, ...andClauses] } : filter;
+
+    // Project minimal fields only
+    const projection = {
+      title: 1,
+      slug: 1,
+      priceMin: 1,
+      priceMax: 1,
+      variants: 1,
+    } as const;
+
+    type AutocompleteLean = {
+      _id: Types.ObjectId;
+      title: string;
+      slug: string;
+      priceMin: number;
+      priceMax: number;
+      variants?: Array<{ sku?: string }>;
+    };
+
+    const items = (await this.model
+      .find(finalFilter)
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .select(projection)
+      .lean()
+      .exec()) as AutocompleteLean[];
+
+    // Map to minimal shape and compute matched SKUs if qLike is provided
+    const result = items.map((p: AutocompleteLean) => {
+      const matchedSkus: string[] = [];
+      const allSkus: string[] = (p.variants ?? []).map((v) => v.sku ?? '').filter((s) => s !== '');
+      if (rx) {
+        for (const s of allSkus) {
+          if (rx.test(s)) matchedSkus.push(s);
+          if (matchedSkus.length >= 5) break;
+        }
+      } else {
+        matchedSkus.push(...allSkus.slice(0, 3));
+      }
+      return {
+        _id: p._id,
+        title: p.title,
+        slug: p.slug,
+        priceMin: p.priceMin,
+        priceMax: p.priceMax,
+        matchedSkus,
+      };
+    });
+
+    return result;
+  }
+
   @Get()
   @ApiOperation({ summary: 'List products (paginated)' })
   @ApiOkResponse({
@@ -648,11 +767,17 @@ export class AdminProductsController {
     },
   })
   async findAll(@Query() query: AdminListProductsQueryDto) {
-    const { q, page = 1, limit = 20 } = query;
+    const { q, qLike, page = 1, limit = 20 } = query;
     const sortSpec = parseSort(query.sort) ?? { createdAt: -1 };
     const filter: Record<string, unknown> = {};
     const andClauses: Record<string, unknown>[] = [];
     if (q) filter.$text = { $search: q };
+    if (qLike && qLike.trim()) {
+      const rx = new RegExp(escapeRegex(qLike.trim()), 'i');
+      andClauses.push({
+        $or: [{ title: rx }, { slug: rx }, { description: rx }, { 'variants.sku': rx }],
+      });
+    }
     if (query.isActive !== undefined) filter.isActive = !!query.isActive;
     if (query.category) filter.categoryIds = new Types.ObjectId(query.category);
     if (query.manufacturerId?.length)
@@ -1160,5 +1285,59 @@ export class AdminProductsController {
     }
 
     return { updated: updatedCount, results };
+  }
+
+  // ---- Clone product ----
+
+  @Post(':id/clone')
+  @ApiOperation({ summary: 'Clone product (creates a copy with unique slug)' })
+  @ApiOkResponse({ description: 'Cloned product' })
+  async clone(
+    @Param('id') id: string,
+    @Body() body?: { skuSuffix?: string; titlePrefix?: string },
+  ) {
+    const doc = await this.model.findById(new Types.ObjectId(id));
+    if (!doc) throw new NotFoundException('Product not found');
+
+    // Prepare new slug
+    const baseSlug = slugify(doc.slug || doc.title || 'item');
+    const newSlug = await ensureUniqueSlug(this.model, baseSlug);
+
+    const skuSuffix = (body?.skuSuffix ?? '').trim();
+    const titlePrefix = (body?.titlePrefix ?? '').trim();
+
+    const cloned = new this.model({
+      slug: newSlug,
+      title: titlePrefix ? `${titlePrefix} ${doc.title}` : doc.title,
+      description: doc.description,
+      categoryIds: [...(doc.categoryIds ?? [])],
+      tags: [...(doc.tags ?? [])],
+      images: [...(doc.images ?? [])],
+      attributes: [...(doc.attributes ?? [])],
+      variants: (doc.variants ?? []).map((v) => ({
+        sku: skuSuffix ? `${v.sku}${skuSuffix}` : v.sku,
+        manufacturerId: v.manufacturerId,
+        countryId: v.countryId,
+        options: { ...(v.options ?? {}) },
+        price: v.price,
+        unit: v.unit,
+        images: [...(v.images ?? [])],
+        barcode: v.barcode,
+        isActive: v.isActive !== false,
+      })),
+      isActive: doc.isActive !== false,
+    } as unknown as Product);
+
+    await (cloned as HydratedDocument<Product>).save();
+    return cloned.toObject();
+  }
+
+  // ---- Export products ----
+  @Get('export')
+  @ApiOperation({ summary: 'Export products (JSON)' })
+  @ApiOkResponse({ description: 'Array of products (lean JSON)' })
+  async exportAll() {
+    const items = await this.model.find({}).lean();
+    return items;
   }
 }

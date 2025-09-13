@@ -23,40 +23,72 @@ export class DiscountsService {
       ],
     } as FilterQuery<DiscountDocument>;
 
-    const and: FilterQuery<DiscountDocument>[] = [];
+    // Otherwise, fallback to legacy top-level fields logic (OR within each scope with empty meaning "any").
+    // Group 0-length means ignore groups; we model via $or in final filter
 
-    // Match by any of the scopes; empty arrays mean not targeted by that scope
-    and.push({ $or: [{ productIds: ctx.productId }, { productIds: { $size: 0 } }] });
-
+    // We cannot pre-expand all possible groups with values from ctx because Mongo query needs to check membership conditions.
+    // Instead, we use $elemMatch with AND conditions inside.
+    const groupElemMatch: Record<string, unknown> = {};
+    const subAnd: Record<string, unknown>[] = [];
+    // productIds: exact match OR empty within group
+    subAnd.push({ $or: [{ productIds: ctx.productId }, { productIds: { $size: 0 } }] });
+    // categoryIds
     if (ctx.categoryIds?.length) {
-      and.push({ $or: [{ categoryIds: { $in: ctx.categoryIds } }, { categoryIds: { $size: 0 } }] });
+      subAnd.push({
+        $or: [{ categoryIds: { $in: ctx.categoryIds } }, { categoryIds: { $size: 0 } }],
+      });
     } else {
-      and.push({ $or: [{ categoryIds: { $size: 0 } }] });
+      subAnd.push({ $or: [{ categoryIds: { $size: 0 } }] });
     }
-
+    // manufacturerIds
     if (ctx.manufacturerId) {
-      and.push({
+      subAnd.push({
         $or: [{ manufacturerIds: ctx.manufacturerId }, { manufacturerIds: { $size: 0 } }],
       });
     } else {
-      and.push({ $or: [{ manufacturerIds: { $size: 0 } }] });
+      subAnd.push({ $or: [{ manufacturerIds: { $size: 0 } }] });
     }
-
+    // countryIds
     if (ctx.countryId) {
-      and.push({ $or: [{ countryIds: ctx.countryId }, { countryIds: { $size: 0 } }] });
+      subAnd.push({ $or: [{ countryIds: ctx.countryId }, { countryIds: { $size: 0 } }] });
     } else {
-      and.push({ $or: [{ countryIds: { $size: 0 } }] });
+      subAnd.push({ $or: [{ countryIds: { $size: 0 } }] });
     }
-
+    // tags
     if (ctx.tags?.length) {
-      and.push({ $or: [{ tags: { $in: ctx.tags } }, { tags: { $size: 0 } }] });
+      subAnd.push({ $or: [{ tags: { $in: ctx.tags } }, { tags: { $size: 0 } }] });
     } else {
-      and.push({ $or: [{ tags: { $size: 0 } }] });
+      subAnd.push({ $or: [{ tags: { $size: 0 } }] });
     }
 
+    groupElemMatch['$and'] = subAnd;
+
+    // Final filter matches when either there are no groups (so legacy fields apply),
+    // OR at least one group matches the ctx
     const final: FilterQuery<DiscountDocument> = {
       ...filter,
-      $and: [...(filter.$and || []), ...and],
+      $and: [
+        ...(filter.$and || []),
+        { $or: [{ targetGroups: { $size: 0 } }, { targetGroups: { $elemMatch: groupElemMatch } }] },
+        // legacy top-level fields still respected to further restrict
+        { $or: [{ productIds: ctx.productId }, { productIds: { $size: 0 } }] },
+        ctx.categoryIds?.length
+          ? ({
+              $or: [{ categoryIds: { $in: ctx.categoryIds } }, { categoryIds: { $size: 0 } }],
+            } as never)
+          : ({ $or: [{ categoryIds: { $size: 0 } }] } as never),
+        ctx.manufacturerId
+          ? ({
+              $or: [{ manufacturerIds: ctx.manufacturerId }, { manufacturerIds: { $size: 0 } }],
+            } as never)
+          : ({ $or: [{ manufacturerIds: { $size: 0 } }] } as never),
+        ctx.countryId
+          ? ({ $or: [{ countryIds: ctx.countryId }, { countryIds: { $size: 0 } }] } as never)
+          : ({ $or: [{ countryIds: { $size: 0 } }] } as never),
+        ctx.tags?.length
+          ? ({ $or: [{ tags: { $in: ctx.tags } }, { tags: { $size: 0 } }] } as never)
+          : ({ $or: [{ tags: { $size: 0 } }] } as never),
+      ],
     };
     const discounts = await this.model.find(final).sort({ priority: 1, createdAt: 1 }).lean();
     return discounts;

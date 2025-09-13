@@ -21,6 +21,25 @@ Common responses
 - 403 Forbidden — неверный `x-api-key`, невалидный/просроченный Bearer токен, или ключ администратора не сконфигурирован
 - 404 Not Found — ресурс не найден (актуально для эндпоинтов вариантов товара и PATCH товара)
 
+### Формат ошибок
+
+Все ошибки возвращаются в едином формате:
+
+```
+{
+  "statusCode": 403,
+  "message": "Invalid admin API key",
+  "error": "Forbidden",
+  "path": "/admin/products",
+  "requestId": "abc123",
+  "timestamp": "2025-09-13T12:00:00.000Z"
+}
+```
+
+При необходимости может быть поле `details`. Вы можете передавать заголовок `X-Request-Id` для трассировки.
+
+См. также: Admin Dashboard — подробности и примеры в файле `docs/admin-dashboard.md`.
+
 Auth errors (примеры)
 
 ```
@@ -101,6 +120,79 @@ curl -H "Authorization: Bearer $ADMIN_JWT" \
 ## Products
 
 Base: `/admin/products`
+
+#### GET `/admin/products/autocomplete`
+
+- Summary: Lightweight product autocomplete for typeahead.
+- Auth: `x-api-key` or `Authorization: Bearer <JWT>`
+- Query params:
+  - `qLike` (string, optional): Case-insensitive substring over `title`, `slug`, `description`, `variants.sku`.
+  - `q` (string, optional): Full-text search (Mongo text index). Can be combined with `qLike` (AND).
+  - `limit` (number, optional, default 10, max 20): Number of suggestions to return.
+- Response: Array of minimal items.
+
+Example:
+
+```bash
+curl -H "x-api-key: $ADMIN_API_KEY" \
+  "http://localhost:3000/admin/products/autocomplete?qLike=comp&limit=10"
+```
+
+Example response:
+
+```
+[
+  {
+    "_id": "665f1a2b3c4d5e6f7a8b9c0d",
+    "title": "Композит универсальный",
+    "slug": "kompozit-universalnyj",
+    "priceMin": 350,
+    "priceMax": 480,
+    "matchedSkus": ["UC-1", "UC-2"]
+  }
+]
+```
+
+Notes:
+
+- If both `q` and `qLike` are provided, they are combined with AND.
+- `matchedSkus` lists up to 5 variant SKUs matching `qLike`; if `qLike` is missing, a few SKUs are included by default.
+- Minimal fields only for performance.
+
+### List products
+
+GET `/admin/products`
+
+Query params:
+
+- `q` string (optional): full-text search via MongoDB text index (typically matches title/description).
+- `qLike` string (optional): case-insensitive substring search across `title`, `slug`, `description`, and `variants.sku`. Safe-escaped as a literal regex. Great for live search/autocomplete.
+- `category` string (ObjectId): filter by category contained in `categoryIds`.
+- `manufacturerId` string | string[]: one or multiple manufacturer IDs contained in product `manufacturerIds`.
+- `countryId` string | string[]: one or multiple country IDs contained in product `countryIds`.
+- `tags` string | string[]: include products having any of specified tags.
+- `isActive` boolean: filter by active state.
+- `opt.<key>=<value>`: variant options filter. Repeat params to OR values, e.g. `opt.size=2g&opt.size=4g&opt.shade=A2`.
+- `sort` string: comma-separated fields, prefix with `-` for desc. Examples: `-createdAt`, `priceMin,-title`.
+- `page` number (default 1)
+- `limit` number (default 20, max 50)
+
+Behavior notes:
+
+- You can combine `q` and `qLike`; both will apply (AND). Use `q` for relevancy via full-text, and `qLike` for instant partial matches while typing.
+- `qLike` uses a case-insensitive regex OR across several fields; on very large datasets it can be slower than `q` because it might not use indexes fully.
+- Variant options live inside `variants[*].options` and are matched within any variant (`$elemMatch`). If multiple `opt.*` keys are provided, all must match within the same variant; multiple values for the same key act as OR.
+
+Examples:
+
+```bash
+curl -H "x-api-key: $ADMIN_API_KEY" \
+  "http://localhost:3000/admin/products?qLike=comp&page=1&limit=20"
+
+# Combine full-text + substring + filters
+curl -H "x-api-key: $ADMIN_API_KEY" \
+  "http://localhost:3000/admin/products?q=композит&qLike=UC-&manufacturerId=665f00000000000000001001&sort=-createdAt"
+```
 
 Product shape (simplified)
 
@@ -657,6 +749,34 @@ Notes:
 - Для каждого затронутого товара пересчитываются агрегаты.
 
 ---
+
+### Clone product
+
+POST `/admin/products/:id/clone`
+
+- Purpose: Быстро создать копию товара для ручного наполнения.
+- Body (optional): `{ "skuSuffix": "-copy", "titlePrefix": "Копия" }`
+- Response: склонированный товар с уникальным `slug` и пересчитанными агрегатами.
+
+Example:
+
+```bash
+curl -X POST -H "x-api-key: $ADMIN_API_KEY" -H "Content-Type: application/json" \
+  -d '{"skuSuffix":"-copy","titlePrefix":"Копия"}' \
+  http://localhost:3000/admin/products/<productId>/clone
+```
+
+### Export products (JSON)
+
+GET `/admin/products/export`
+
+- Purpose: Экспортить текущий каталог в JSON (read-only, поможет согласовать будущий импорт).
+- Response: массив товаров (lean JSON).
+
+```bash
+curl -H "x-api-key: $ADMIN_API_KEY" \
+  http://localhost:3000/admin/products/export > products.json
+```
 
 ## Orders
 

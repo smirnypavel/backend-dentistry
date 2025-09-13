@@ -1,0 +1,174 @@
+/* Swagger UI Dark Theme — Monokai variant */
+/* Scope to .swagger-ui to avoid leaking styles */
+.swagger-ui {
+  --bg: #272822;
+  --panel: #2e2f29;
+  --panel-alt: #33342e;
+  --text: #f8f8f2;
+  --muted: #aab0a6;
+  --primary: #66d9ef;
+  --accent: #a6e22e;
+  --warning: #fd971f;
+  --error: #f92672;
+  --code-bg: #1e1f1c;
+  --border: #3a3b35;
+}
+
+.swagger-ui,
+.swagger-ui .wrapper,
+.swagger-ui .opblock,
+.swagger-ui .topbar,
+.swagger-ui .information-container,
+.swagger-ui .scheme-container,
+.swagger-ui .servers,
+.swagger-ui .model,
+.swagger-ui .response,
+.swagger-ui .responses-inner,
+.swagger-ui section.models {
+  background-color: var(--bg) !important;
+  color: var(--text) !important;
+}
+
+.swagger-ui .topbar,
+.swagger-ui .scheme-container,
+.swagger-ui .opblock-tag,
+.swagger-ui .opblock,
+.swagger-ui .model,
+.swagger-ui .response,
+.swagger-ui .servers {
+  border-color: var(--border) !important;
+  background-color: var(--panel) !important;
+}
+
+.swagger-ui .info .title,
+.swagger-ui .info .title small.version-stamp,
+.swagger-ui .opblock-tag.no-desc span,
+.swagger-ui .models h4 span {
+  color: var(--text) !important;
+}
+
+.swagger-ui a,
+.swagger-ui a:visited {
+  color: var(--primary) !important;
+}
+.swagger-ui a:hover {
+  color: var(--accent) !important;
+}
+
+.swagger-ui .model-box,
+.swagger-ui .model-toggle,
+.swagger-ui .prop-type,
+.swagger-ui .model-title,
+.swagger-ui .parameter__name,
+.swagger-ui .parameter__type,
+.swagger-ui .parameter__in,
+.swagger-ui .response-col_status,
+.swagger-ui .opblock-summary-path,
+.swagger-ui .opblock-summary-method {
+  color: var(--text) !important;
+}
+
+.swagger-ui .opblock-summary-description,
+.swagger-ui .description,
+.swagger-ui .markdown p,
+.swagger-ui table thead tr th,
+.swagger-ui .responses-inner h4,
+.swagger-ui .tab li a {
+  color: var(--muted) !important;
+}
+
+.swagger-ui .btn,
+.swagger-ui .btn.execute,
+.swagger-ui .authorize,
+.swagger-ui .download-contents {
+  background: var(--panel-alt) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+.swagger-ui .btn:hover,
+.swagger-ui .btn.execute:hover,
+.swagger-ui .authorize:hover,
+.swagger-ui .download-contents:hover {
+  background: var(--accent) !important;
+  color: #111 !important;
+}
+
+/* HTTP method colors (Monokai-inspired) */
+.swagger-ui .opblock.opblock-get {
+  border-color: #66d9ef;
+}
+.swagger-ui .opblock.opblock-post {
+  border-color: #a6e22e;
+}
+.swagger-ui .opblock.opblock-put {
+  border-color: #fd971f;
+}
+.swagger-ui .opblock.opblock-delete {
+  border-color: #f92672;
+}
+.swagger-ui .opblock.opblock-patch {
+  border-color: #ae81ff;
+}
+.swagger-ui .opblock.opblock-head {
+  border-color: #75715e;
+}
+.swagger-ui .opblock.opblock-options {
+  border-color: #e6db74;
+}
+.swagger-ui .opblock.opblock-get .opblock-summary-method {
+  background: #66d9ef !important;
+  color: #111 !important;
+}
+.swagger-ui .opblock.opblock-post .opblock-summary-method {
+  background: #a6e22e !important;
+  color: #111 !important;
+}
+.swagger-ui .opblock.opblock-put .opblock-summary-method {
+  background: #fd971f !important;
+  color: #111 !important;
+}
+.swagger-ui .opblock.opblock-delete .opblock-summary-method {
+  background: #f92672 !important;
+  color: #fff !important;
+}
+.swagger-ui .opblock.opblock-patch .opblock-summary-method {
+  background: #ae81ff !important;
+  color: #111 !important;
+}
+.swagger-ui .opblock.opblock-head .opblock-summary-method {
+  background: #75715e !important;
+  color: #fff !important;
+}
+.swagger-ui .opblock.opblock-options .opblock-summary-method {
+  background: #e6db74 !important;
+  color: #111 !important;
+}
+
+/* Code blocks */
+.swagger-ui code,
+.swagger-ui pre {
+  background: var(--code-bg) !important;
+  color: var(--text) !important;
+}
+
+.swagger-ui table,
+.swagger-ui table tbody tr,
+.swagger-ui table thead tr th,
+.swagger-ui table tbody tr td {
+  border-color: var(--border) !important;
+}
+
+/* Inputs */
+.swagger-ui input,
+.swagger-ui select,
+.swagger-ui textarea {
+  background: var(--panel-alt) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+/* Misc */
+.swagger-ui .version-stamp {
+  background: var(--panel-alt) !important;
+  color: var(--muted) !important;
+}

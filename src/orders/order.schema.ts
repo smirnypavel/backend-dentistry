@@ -94,7 +94,18 @@ export class Order {
 
   @Prop({ trim: true })
   comment?: string;
+
+  // Idempotency support
+  @Prop({ trim: true })
+  idempotencyKey?: string;
+
+  @Prop({ trim: true })
+  idempotencyKeyHash?: string;
 }
 
 export const OrderSchema = SchemaFactory.createForClass(Order);
 OrderSchema.index({ phone: 1, clientId: 1, createdAt: -1 });
+// For dashboard date-range queries
+OrderSchema.index({ createdAt: -1 });
+// Unique idempotency per (clientId + hash) to avoid duplicates
+OrderSchema.index({ clientId: 1, idempotencyKeyHash: 1 }, { unique: true, sparse: true });

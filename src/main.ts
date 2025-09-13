@@ -2,10 +2,18 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { GlobalHttpExceptionFilter } from './common/filters/http-exception.filter';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { json, urlencoded } from 'express';
+import * as express from 'express';
+import * as path from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Body size limits (safe defaults for small instances)
+  app.use(json({ limit: process.env.JSON_BODY_LIMIT || '1mb' }));
+  app.use(urlencoded({ limit: process.env.FORM_BODY_LIMIT || '1mb', extended: true }));
 
   const corsOrigins = (process.env.CORS_ORIGINS || '')
     .split(',')
@@ -25,6 +33,26 @@ async function bootstrap() {
       transformOptions: { enableImplicitConversion: true },
     }),
   );
+
+  // Simple request id middleware (if client doesn't send x-request-id)
+  app.use(
+    (
+      req: import('express').Request,
+      _res: import('express').Response,
+      next: import('express').NextFunction,
+    ) => {
+      if (!req.headers['x-request-id']) {
+        // naive id for tracing
+        req.headers['x-request-id'] = Math.random().toString(36).slice(2);
+      }
+      next();
+    },
+  );
+
+  app.useGlobalFilters(new GlobalHttpExceptionFilter());
+
+  const port = process.env.PORT ? Number(process.env.PORT) : 3000;
+  const swaggerServer = process.env.SWAGGER_SERVER_URL || `http://localhost:${port}`;
 
   const config = new DocumentBuilder()
     .setTitle('Dentistry Shop API')
@@ -48,37 +76,39 @@ async function bootstrap() {
       },
       'bearer',
     )
-    .addServer('http://localhost:3000')
+    .addServer(swaggerServer)
     .build();
   const document = SwaggerModule.createDocument(app, config);
+  // Serve static assets for Swagger (themes, logos) under /docs-assets
+  app.use('/docs-assets', express.static(path.resolve(process.cwd(), 'public')));
+
+  // Swagger theme selection: allow override via env
+  // 1) SWAGGER_CSS_URL=/docs-assets/swagger-dark-monokai.css (absolute URL or path)
+  // 2) SWAGGER_THEME=monokai|dracula|default (maps to files in /public)
+  const swaggerThemeFromEnv = process.env.SWAGGER_THEME?.toLowerCase();
+  let customCssUrl = process.env.SWAGGER_CSS_URL;
+  if (!customCssUrl) {
+    switch (swaggerThemeFromEnv) {
+      case 'monokai':
+        customCssUrl = '/docs-assets/swagger-dark-monokai.css';
+        break;
+      case 'dracula':
+        customCssUrl = '/docs-assets/swagger-dark-dracula.css';
+        break;
+      case 'default':
+        customCssUrl = '/docs-assets/swagger-dark.css';
+        break;
+      default:
+        customCssUrl = '/docs-assets/swagger-dark.css';
+    }
+  }
+
   SwaggerModule.setup('docs', app, document, {
     swaggerOptions: { persistAuthorization: true },
     customSiteTitle: 'Dentistry Shop API — Swagger',
-    customCss: `
-      body { background-color: #121212; color: #e0e0e0; }
-      .swagger-ui, .swagger-ui * { color-scheme: dark; }
-      .swagger-ui .topbar { background-color: #1f1f1f; border-bottom: 1px solid #333; }
-      .swagger-ui .topbar a span { color: #e0e0e0 !important; }
-      .swagger-ui .info h1, .swagger-ui .info p { color: #e0e0e0; }
-      .swagger-ui .scheme-container { background: #1e1e1e; border-color: #333; }
-      .swagger-ui .opblock { background: #1e1e1e; border-color: #333; }
-      .swagger-ui .opblock .opblock-summary { background: #2a2a2a; border-color: #3a3a3a; }
-      .swagger-ui .opblock .opblock-summary-description, .swagger-ui .opblock .opblock-summary-path { color: #ddd; }
-      .swagger-ui .opblock .opblock-summary-method { background: #444; color: #fff; border-color: #555; }
-      .swagger-ui .opblock .opblock-section-header { background: #2a2a2a; border-color: #3a3a3a; color: #e0e0e0; }
-      .swagger-ui .btn, .swagger-ui .authorization__btn { background: #444; color: #fff; border-color: #666; }
-      .swagger-ui .btn.authorize { background: #04d47a; color: #000; border-color: #04d47a; }
-      .swagger-ui input, .swagger-ui select, .swagger-ui textarea { background: #1b1b1b; color: #eee; border: 1px solid #444; }
-      .swagger-ui .model-box { background: #1b1b1b; border-color: #333; }
-      .swagger-ui .response-col_status, .swagger-ui table thead tr th { color: #ddd; }
-      .swagger-ui .responses-inner { background: #1b1b1b; }
-      .swagger-ui .tab li { color: #ddd; }
-      .swagger-ui .markdown code, .swagger-ui code { background: #333; color: #eee; }
-      .swagger-ui .copy-to-clipboard { background: #2a2a2a; }
-    `,
+    customCssUrl,
   });
 
-  const port = process.env.PORT ? Number(process.env.PORT) : 3000;
   await app.listen(port);
   // eslint-disable-next-line no-console
   console.log(`Server is running on http://localhost:${port}`);

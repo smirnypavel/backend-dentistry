@@ -7,6 +7,7 @@ import { InjectModel as InjectModel2 } from '@nestjs/mongoose';
 import { Product, ProductDocument } from '../catalog/products/product.schema';
 import type { ProductVariant } from '../catalog/products/product.schema';
 import { DiscountsService } from '../discounts/discounts.service';
+import crypto from 'crypto';
 
 @Injectable()
 export class OrdersService {
@@ -16,7 +17,16 @@ export class OrdersService {
     private readonly discounts: DiscountsService,
   ) {}
 
-  async create(dto: CreateOrderDto) {
+  async create(dto: CreateOrderDto, idempotencyKey?: string) {
+    // Idempotency: if header is provided, try to find an existing order by (clientId + hash)
+    const key = (idempotencyKey ?? '').trim();
+    const idemHash = key ? crypto.createHash('sha256').update(key).digest('hex') : undefined;
+    if (idemHash) {
+      const existing = await this.model
+        .findOne({ clientId: dto.clientId, idempotencyKeyHash: idemHash })
+        .lean();
+      if (existing) return existing;
+    }
     // Load products to validate variants and compute prices server-side
     const productIds = dto.items.map((i) => i.productId);
     const products = await this.productModel
@@ -75,18 +85,33 @@ export class OrdersService {
     const deliveryFee = dto.deliveryFee ?? 0;
     const total = itemsTotal + deliveryFee;
 
-    const order = await this.model.create({
-      phone: dto.phone,
-      clientId: dto.clientId,
-      items,
-      itemsTotal,
-      deliveryFee,
-      total,
-      status: 'new',
-      name: dto.name,
-      comment: dto.comment,
-    });
-    return order.toObject();
+    // Create the order; use unique index on (clientId, idempotencyKeyHash) to avoid races
+    try {
+      const order = await this.model.create({
+        phone: dto.phone,
+        clientId: dto.clientId,
+        items,
+        itemsTotal,
+        deliveryFee,
+        total,
+        status: 'new',
+        name: dto.name,
+        comment: dto.comment,
+        idempotencyKey: key || undefined,
+        idempotencyKeyHash: idemHash,
+      });
+      return order.toObject();
+    } catch (err: unknown) {
+      // If duplicate key due to race, fetch and return existing
+      const anyErr = err as { code?: number } | undefined;
+      if (anyErr?.code === 11000 && idemHash) {
+        const existing = await this.model
+          .findOne({ clientId: dto.clientId, idempotencyKeyHash: idemHash })
+          .lean();
+        if (existing) return existing;
+      }
+      throw err;
+    }
   }
 
   async history(phone: string, clientId: string) {

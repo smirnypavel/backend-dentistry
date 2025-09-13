@@ -5,6 +5,26 @@ export type DiscountDocument = HydratedDocument<Discount>;
 
 export type DiscountType = 'percent' | 'fixed';
 
+@Schema({ _id: false })
+export class DiscountTargetGroup {
+  @Prop({ type: [Types.ObjectId], default: [] })
+  productIds?: Types.ObjectId[];
+
+  @Prop({ type: [Types.ObjectId], default: [] })
+  categoryIds?: Types.ObjectId[];
+
+  @Prop({ type: [Types.ObjectId], default: [] })
+  manufacturerIds?: Types.ObjectId[];
+
+  @Prop({ type: [Types.ObjectId], default: [] })
+  countryIds?: Types.ObjectId[];
+
+  @Prop({ type: [String], default: [] })
+  tags?: string[];
+}
+
+export const DiscountTargetGroupSchema = SchemaFactory.createForClass(DiscountTargetGroup);
+
 @Schema({ timestamps: true })
 export class Discount {
   @Prop({ required: true, trim: true })
@@ -49,6 +69,12 @@ export class Discount {
 
   @Prop({ type: [String], default: [] })
   tags!: string[];
+
+  // Advanced targeting: groups of conditions. If non-empty, discount applies
+  // when ANY group matches; inside a group, conditions are combined with AND.
+  // If empty or omitted, top-level fields above are used (backward compatible).
+  @Prop({ type: [DiscountTargetGroupSchema], default: [] })
+  targetGroups!: DiscountTargetGroup[];
 }
 
 export const DiscountSchema = SchemaFactory.createForClass(Discount);
@@ -60,6 +86,11 @@ DiscountSchema.index({ categoryIds: 1 });
 DiscountSchema.index({ manufacturerIds: 1 });
 DiscountSchema.index({ countryIds: 1 });
 DiscountSchema.index({ tags: 1 });
+DiscountSchema.index({ 'targetGroups.productIds': 1 });
+DiscountSchema.index({ 'targetGroups.categoryIds': 1 });
+DiscountSchema.index({ 'targetGroups.manufacturerIds': 1 });
+DiscountSchema.index({ 'targetGroups.countryIds': 1 });
+DiscountSchema.index({ 'targetGroups.tags': 1 });
 
 export interface DiscountContext {
   price: number;

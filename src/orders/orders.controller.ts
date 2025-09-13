@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Headers } from '@nestjs/common';
 import { ApiOperation, ApiTags, ApiCreatedResponse, ApiOkResponse, ApiBody } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { OrdersService } from './orders.service';
@@ -79,8 +79,8 @@ export class OrdersController {
       },
     },
   })
-  create(@Body() dto: CreateOrderDto) {
-    return this.service.create(dto);
+  create(@Body() dto: CreateOrderDto, @Headers('x-idempotency-key') idemKey?: string) {
+    return this.service.create(dto, idemKey);
   }
 
   @Get('history')

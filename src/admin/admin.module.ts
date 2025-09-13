@@ -16,6 +16,7 @@ import { AdminOrdersController } from './orders.admin.controller';
 import { AdminUploadsController } from './uploads.admin.controller';
 import { UploadsService } from './uploads.service';
 import { AdminDiscountsController } from './discounts.admin.controller';
+import { AdminDashboardController } from './dashboard.admin.controller';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { AdminDiscountsController } from './discounts.admin.controller';
     AdminOrdersController,
     AdminUploadsController,
     AdminDiscountsController,
+    AdminDashboardController,
   ],
   providers: [UploadsService, AdminGuard],
 })

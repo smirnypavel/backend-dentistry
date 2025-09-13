@@ -35,6 +35,33 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
+class TargetGroupDto {
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  productIds?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  categoryIds?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  manufacturerIds?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  countryIds?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  tags?: string[];
+}
+
 class CreateDiscountDto {
   @ApiProperty()
   @IsString()
@@ -104,6 +131,14 @@ class CreateDiscountDto {
   @IsOptional()
   @IsArray()
   tags?: string[];
+
+  @ApiPropertyOptional({
+    type: [TargetGroupDto],
+    description: 'Advanced target groups (OR of groups, AND inside each group)',
+  })
+  @IsOptional()
+  @IsArray()
+  targetGroups?: TargetGroupDto[];
 }
 
 class UpdateDiscountDto extends CreateDiscountDto {}
@@ -181,6 +216,14 @@ class ApplyDiscountTargetsDto {
   @IsOptional()
   @IsArray()
   tags?: string[];
+
+  @ApiPropertyOptional({
+    type: [TargetGroupDto],
+    description: 'Advanced target groups (OR of groups, AND inside each group)',
+  })
+  @IsOptional()
+  @IsArray()
+  targetGroups?: TargetGroupDto[];
 }
 
 @ApiTags('admin:discounts')
@@ -237,6 +280,13 @@ export class AdminDiscountsController {
       manufacturerIds: toIds(dto.manufacturerIds),
       countryIds: toIds(dto.countryIds),
       tags: dto.tags ?? [],
+      targetGroups: (dto.targetGroups ?? []).map((g) => ({
+        productIds: toIds(g.productIds),
+        categoryIds: toIds(g.categoryIds),
+        manufacturerIds: toIds(g.manufacturerIds),
+        countryIds: toIds(g.countryIds),
+        tags: g.tags ?? [],
+      })),
     });
     return doc.toObject();
   }
@@ -261,6 +311,14 @@ export class AdminDiscountsController {
     if (dto.manufacturerIds !== undefined) patch.manufacturerIds = toIds(dto.manufacturerIds);
     if (dto.countryIds !== undefined) patch.countryIds = toIds(dto.countryIds);
     if (dto.tags !== undefined) patch.tags = dto.tags ?? [];
+    if (dto.targetGroups !== undefined)
+      patch.targetGroups = (dto.targetGroups ?? []).map((g) => ({
+        productIds: toIds(g.productIds),
+        categoryIds: toIds(g.categoryIds),
+        manufacturerIds: toIds(g.manufacturerIds),
+        countryIds: toIds(g.countryIds),
+        tags: g.tags ?? [],
+      }));
     await this.model.updateOne({ _id: new Types.ObjectId(id) }, { $set: patch });
     return this.model.findById(new Types.ObjectId(id)).lean();
   }
