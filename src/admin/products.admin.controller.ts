@@ -22,10 +22,11 @@ import {
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
+import { ApiBearerAuth } from '@nestjs/swagger';
 import { HydratedDocument, Model, Types } from 'mongoose';
 import { Product, ProductDocument, ProductVariant } from '../catalog/products/product.schema';
 import { AdminGuard } from './admin.guard';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
@@ -170,6 +171,104 @@ class UpdateVariantDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+}
+
+class BulkVariantTargetDto {
+  @ApiProperty({ description: 'Product ObjectId' })
+  @IsString()
+  productId!: string;
+
+  @ApiPropertyOptional({ description: 'Variant ObjectId (preferred)' })
+  @IsOptional()
+  @IsString()
+  variantId?: string;
+
+  @ApiPropertyOptional({ description: 'Variant SKU (fallback if variantId is not provided)' })
+  @IsOptional()
+  @IsString()
+  sku?: string;
+}
+
+class BulkVariantPatchDto {
+  @ApiPropertyOptional({ description: 'New price for variant' })
+  @IsOptional()
+  @IsNumber()
+  price?: number;
+
+  @ApiPropertyOptional({ description: 'Set variant active state' })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+
+  @ApiPropertyOptional({ description: 'Unit label (e.g., шт)' })
+  @IsOptional()
+  @IsString()
+  unit?: string;
+}
+
+class BulkUpdateVariantsDto {
+  @ApiProperty({ type: [BulkVariantTargetDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => BulkVariantTargetDto)
+  targets!: BulkVariantTargetDto[];
+
+  @ApiProperty({ type: BulkVariantPatchDto })
+  @ValidateNested()
+  @Type(() => BulkVariantPatchDto)
+  patch!: BulkVariantPatchDto;
+}
+
+class BulkProductIdsDto {
+  @ApiProperty({ type: [String], description: 'Product ObjectIds' })
+  @IsArray()
+  @IsString({ each: true })
+  productIds!: string[];
+}
+
+class BulkProductActiveDto extends BulkProductIdsDto {
+  @ApiProperty({ description: 'Set product isActive' })
+  @IsBoolean()
+  isActive!: boolean;
+}
+
+class BulkTagsDto extends BulkProductIdsDto {
+  @ApiProperty({ type: [String], description: 'Tags to add/remove' })
+  @IsArray()
+  @IsString({ each: true })
+  tags!: string[];
+}
+
+class BulkCategoriesDto extends BulkProductIdsDto {
+  @ApiProperty({ type: [String], description: 'Category ObjectIds to add/remove' })
+  @IsArray()
+  @IsString({ each: true })
+  categoryIds!: string[];
+}
+
+class AdjustPriceDto {
+  @ApiPropertyOptional({ description: 'Percent change, e.g. 10 for +10%, -5 for -5%' })
+  @IsOptional()
+  @IsNumber()
+  percent?: number;
+
+  @ApiPropertyOptional({ description: 'Delta change (absolute), e.g. 25 to +25, -50 to -50' })
+  @IsOptional()
+  @IsNumber()
+  delta?: number;
+}
+
+class BulkAdjustVariantPricesDto {
+  @ApiProperty({ type: [BulkVariantTargetDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => BulkVariantTargetDto)
+  targets!: BulkVariantTargetDto[];
+
+  @ApiProperty({ type: AdjustPriceDto })
+  @ValidateNested()
+  @Type(() => AdjustPriceDto)
+  patch!: AdjustPriceDto;
 }
 
 class ProductAttributeDto {
@@ -332,6 +431,37 @@ class AdminListProductsQueryDto {
   @IsString()
   q?: string;
 
+  @ApiPropertyOptional({ description: 'Category ID (ObjectId)' })
+  @IsOptional()
+  @IsString()
+  category?: string;
+
+  @ApiPropertyOptional({ type: [String], description: 'Manufacturer ID(s)' })
+  @IsOptional()
+  @Type(() => String)
+  @IsArray()
+  @IsString({ each: true })
+  manufacturerId?: string[];
+
+  @ApiPropertyOptional({ type: [String], description: 'Country ID(s)' })
+  @IsOptional()
+  @Type(() => String)
+  @IsArray()
+  @IsString({ each: true })
+  countryId?: string[];
+
+  @ApiPropertyOptional({ type: [String], description: 'Tags (any of)' })
+  @IsOptional()
+  @Type(() => String)
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];
+
+  @ApiPropertyOptional({ description: 'Active state filter' })
+  @IsOptional()
+  @Type(() => Boolean)
+  isActive?: boolean;
+
   @ApiPropertyOptional({ description: 'Sort expression, e.g. -createdAt,title' })
   @IsOptional()
   @IsString()
@@ -348,6 +478,31 @@ class AdminListProductsQueryDto {
   @Type(() => Number)
   @IsNumber()
   limit?: number = 20;
+
+  @ApiPropertyOptional({
+    description:
+      'Variant options filter map. Built automatically from query params like opt.<key>=<value> (e.g. opt.size=2g&opt.shade=A2). Values can be repeated to form OR conditions.',
+    type: 'object',
+    additionalProperties: { type: 'array', items: { type: 'string' } },
+  })
+  @IsOptional()
+  @Transform(({ obj }) => {
+    const res: Record<string, string[]> = {};
+    const source = (obj ?? {}) as Record<string, unknown>;
+    for (const [k, v] of Object.entries(source)) {
+      if (!k.startsWith('opt.')) continue;
+      const key = k.slice(4).trim();
+      if (!key) continue;
+      const values = Array.isArray(v) ? (v as unknown[]) : [v];
+      const strs = values
+        .filter((x) => x !== undefined && x !== null)
+        .map((x) => String(x as unknown));
+      if (!res[key]) res[key] = [];
+      res[key].push(...strs);
+    }
+    return res;
+  })
+  opt?: Record<string, string[]>;
 }
 
 function parseSort(sort?: string): Record<string, 1 | -1> | undefined {
@@ -457,6 +612,7 @@ async function ensureUniqueSlugExcludingId(
 
 @ApiTags('admin:products')
 @ApiSecurity('x-api-key')
+@ApiBearerAuth('bearer')
 @UseGuards(AdminGuard)
 @Controller('admin/products')
 @ApiExtraModels(
@@ -495,15 +651,46 @@ export class AdminProductsController {
     const { q, page = 1, limit = 20 } = query;
     const sortSpec = parseSort(query.sort) ?? { createdAt: -1 };
     const filter: Record<string, unknown> = {};
+    const andClauses: Record<string, unknown>[] = [];
     if (q) filter.$text = { $search: q };
+    if (query.isActive !== undefined) filter.isActive = !!query.isActive;
+    if (query.category) filter.categoryIds = new Types.ObjectId(query.category);
+    if (query.manufacturerId?.length)
+      filter.manufacturerIds = { $in: query.manufacturerId.map((id) => new Types.ObjectId(id)) };
+    if (query.countryId?.length)
+      filter.countryIds = { $in: query.countryId.map((id) => new Types.ObjectId(id)) };
+    if (query.tags?.length) filter.tags = { $in: query.tags };
+
+    // Variant options filters collected into query.opt
+    const optionPairs: Record<string, string[]> = query.opt ?? {};
+    if (Object.keys(optionPairs).length) {
+      const elem: Record<string, unknown> = {};
+      for (const [optKey, rawVals] of Object.entries(optionPairs)) {
+        // Build flexible matcher allowing numeric equality both as string and number
+        const candidates = new Set<unknown>();
+        for (const raw of rawVals) {
+          const s = String(raw);
+          candidates.add(s);
+          const num = Number(s);
+          if (Number.isFinite(num) && s.trim() !== '' && String(num) === s) {
+            candidates.add(num);
+          }
+        }
+        const arr = Array.from(candidates);
+        elem[`options.${optKey}`] = arr.length > 1 ? { $in: arr } : arr[0];
+      }
+      filter.variants = { $elemMatch: elem };
+    }
+
+    const finalFilter = andClauses.length ? { $and: [filter, ...andClauses] } : filter;
     const [items, total] = await Promise.all([
       this.model
-        .find(filter)
+        .find(finalFilter)
         .sort(sortSpec)
         .skip((page - 1) * limit)
         .limit(limit)
         .lean(),
-      this.model.countDocuments(filter),
+      this.model.countDocuments(finalFilter),
     ]);
     return { items, page, limit, total };
   }
@@ -678,5 +865,300 @@ export class AdminProductsController {
     if (!removed) throw new NotFoundException('Variant not found');
     await (doc as HydratedDocument<Product>).save();
     return doc.toObject();
+  }
+
+  @Patch('bulk/variants')
+  @ApiOperation({ summary: 'Bulk update product variants (price/isActive/unit)' })
+  @ApiBody({ type: BulkUpdateVariantsDto })
+  @ApiOkResponse({
+    description:
+      'Result of bulk updates: per-target status. Aggregates are recalculated for each affected product.',
+  })
+  async bulkUpdateVariants(@Body() body: BulkUpdateVariantsDto) {
+    const results: Array<{
+      productId: string;
+      variantId?: string;
+      sku?: string;
+      status: 'ok' | 'not-found' | 'skipped';
+      reason?: string;
+    }> = [];
+
+    if (!body.patch || Object.keys(body.patch).length === 0) {
+      return { updated: 0, results: [], message: 'Empty patch — nothing to do' };
+    }
+
+    const byProduct = new Map<string, BulkVariantTargetDto[]>();
+    for (const t of body.targets ?? []) {
+      if (!t?.productId) continue;
+      const list = byProduct.get(t.productId) ?? [];
+      list.push(t);
+      byProduct.set(t.productId, list);
+    }
+
+    let updatedCount = 0;
+    for (const [productId, targets] of byProduct.entries()) {
+      const doc = await this.model.findById(new Types.ObjectId(productId));
+      if (!doc) {
+        for (const t of targets) {
+          results.push({ productId, variantId: t.variantId, sku: t.sku, status: 'not-found' });
+        }
+        continue;
+      }
+
+      let touched = false;
+      for (const t of targets) {
+        const idx = t.variantId
+          ? doc.variants.findIndex(
+              (x) => String((x as unknown as { _id?: Types.ObjectId })._id) === String(t.variantId),
+            )
+          : t.sku
+            ? doc.variants.findIndex((x) => x.sku === t.sku)
+            : -1;
+        if (idx < 0) {
+          results.push({ productId, variantId: t.variantId, sku: t.sku, status: 'not-found' });
+          continue;
+        }
+        const v = doc.variants[idx];
+        if (body.patch.price !== undefined) v.price = body.patch.price;
+        if (body.patch.isActive !== undefined) v.isActive = body.patch.isActive;
+        if (body.patch.unit !== undefined) v.unit = body.patch.unit;
+        touched = true;
+        updatedCount += 1;
+        const vId = String((v as unknown as { _id?: Types.ObjectId })._id ?? '');
+        results.push({
+          productId,
+          variantId: vId,
+          sku: v.sku,
+          status: 'ok',
+        });
+      }
+
+      if (touched) {
+        await (doc as HydratedDocument<Product>).save();
+      }
+    }
+
+    return { updated: updatedCount, results };
+  }
+
+  // ---- Bulk operations on products ----
+
+  @Patch('bulk/active')
+  @ApiOperation({ summary: 'Bulk toggle products active state' })
+  @ApiBody({ type: BulkProductActiveDto })
+  @ApiOkResponse({ description: 'Number of products updated' })
+  async bulkToggleActive(@Body() body: BulkProductActiveDto) {
+    const ids = (body.productIds ?? []).filter(Boolean).map((id) => new Types.ObjectId(id));
+    if (!ids.length) return { matched: 0, modified: 0 };
+    const res = await this.model.updateMany(
+      { _id: { $in: ids } },
+      { $set: { isActive: !!body.isActive } },
+    );
+    // Mongoose returns different result shapes depending on version; normalize
+    const matched =
+      (res as unknown as { matchedCount?: number; n?: number }).matchedCount ??
+      (res as unknown as { n?: number }).n ??
+      0;
+    const modified =
+      (res as unknown as { modifiedCount?: number; nModified?: number }).modifiedCount ??
+      (res as unknown as { nModified?: number }).nModified ??
+      0;
+    return { matched, modified };
+  }
+
+  @Patch('bulk/tags/add')
+  @ApiOperation({ summary: 'Bulk add tags to products' })
+  @ApiBody({ type: BulkTagsDto })
+  @ApiOkResponse({ description: 'Number of products updated' })
+  async bulkAddTags(@Body() body: BulkTagsDto) {
+    const ids = (body.productIds ?? []).filter(Boolean).map((id) => new Types.ObjectId(id));
+    const tags = Array.from(
+      new Set((body.tags ?? []).filter((t) => typeof t === 'string' && t.trim() !== '')),
+    );
+    if (!ids.length || !tags.length) return { matched: 0, modified: 0 };
+    const res = await this.model.updateMany(
+      { _id: { $in: ids } },
+      { $addToSet: { tags: { $each: tags } } },
+    );
+    const matched =
+      (res as unknown as { matchedCount?: number; n?: number }).matchedCount ??
+      (res as unknown as { n?: number }).n ??
+      0;
+    const modified =
+      (res as unknown as { modifiedCount?: number; nModified?: number }).modifiedCount ??
+      (res as unknown as { nModified?: number }).nModified ??
+      0;
+    return { matched, modified };
+  }
+
+  @Patch('bulk/tags/remove')
+  @ApiOperation({ summary: 'Bulk remove tags from products' })
+  @ApiBody({ type: BulkTagsDto })
+  @ApiOkResponse({ description: 'Number of products updated' })
+  async bulkRemoveTags(@Body() body: BulkTagsDto) {
+    const ids = (body.productIds ?? []).filter(Boolean).map((id) => new Types.ObjectId(id));
+    const tags = Array.from(
+      new Set((body.tags ?? []).filter((t) => typeof t === 'string' && t.trim() !== '')),
+    );
+    if (!ids.length || !tags.length) return { matched: 0, modified: 0 };
+    const res = await this.model.updateMany(
+      { _id: { $in: ids } },
+      { $pull: { tags: { $in: tags } } },
+    );
+    const matched =
+      (res as unknown as { matchedCount?: number; n?: number }).matchedCount ??
+      (res as unknown as { n?: number }).n ??
+      0;
+    const modified =
+      (res as unknown as { modifiedCount?: number; nModified?: number }).modifiedCount ??
+      (res as unknown as { nModified?: number }).nModified ??
+      0;
+    return { matched, modified };
+  }
+
+  @Patch('bulk/categories/add')
+  @ApiOperation({ summary: 'Bulk add categories to products' })
+  @ApiBody({ type: BulkCategoriesDto })
+  @ApiOkResponse({ description: 'Number of products updated' })
+  async bulkAddCategories(@Body() body: BulkCategoriesDto) {
+    const ids = (body.productIds ?? []).filter(Boolean).map((id) => new Types.ObjectId(id));
+    const cats = Array.from(
+      new Set((body.categoryIds ?? []).filter((t) => typeof t === 'string' && t.trim() !== '')),
+    ).map((id) => new Types.ObjectId(id));
+    if (!ids.length || !cats.length) return { matched: 0, modified: 0 };
+    const res = await this.model.updateMany(
+      { _id: { $in: ids } },
+      { $addToSet: { categoryIds: { $each: cats } } },
+    );
+    const matched =
+      (res as unknown as { matchedCount?: number; n?: number }).matchedCount ??
+      (res as unknown as { n?: number }).n ??
+      0;
+    const modified =
+      (res as unknown as { modifiedCount?: number; nModified?: number }).modifiedCount ??
+      (res as unknown as { nModified?: number }).nModified ??
+      0;
+    return { matched, modified };
+  }
+
+  @Patch('bulk/categories/remove')
+  @ApiOperation({ summary: 'Bulk remove categories from products' })
+  @ApiBody({ type: BulkCategoriesDto })
+  @ApiOkResponse({ description: 'Number of products updated' })
+  async bulkRemoveCategories(@Body() body: BulkCategoriesDto) {
+    const ids = (body.productIds ?? []).filter(Boolean).map((id) => new Types.ObjectId(id));
+    const cats = Array.from(
+      new Set((body.categoryIds ?? []).filter((t) => typeof t === 'string' && t.trim() !== '')),
+    ).map((id) => new Types.ObjectId(id));
+    if (!ids.length || !cats.length) return { matched: 0, modified: 0 };
+    const res = await this.model.updateMany(
+      { _id: { $in: ids } },
+      { $pull: { categoryIds: { $in: cats } } },
+    );
+    const matched =
+      (res as unknown as { matchedCount?: number; n?: number }).matchedCount ??
+      (res as unknown as { n?: number }).n ??
+      0;
+    const modified =
+      (res as unknown as { modifiedCount?: number; nModified?: number }).modifiedCount ??
+      (res as unknown as { nModified?: number }).nModified ??
+      0;
+    return { matched, modified };
+  }
+
+  @Patch('bulk/variants/adjust-price')
+  @ApiOperation({ summary: 'Bulk adjust variant prices by percent or delta' })
+  @ApiBody({ type: BulkAdjustVariantPricesDto })
+  @ApiOkResponse({
+    description: 'Per-target results; aggregates recalculated for affected products',
+  })
+  async bulkAdjustVariantPrices(@Body() body: BulkAdjustVariantPricesDto) {
+    const results: Array<{
+      productId: string;
+      variantId?: string;
+      sku?: string;
+      status: 'ok' | 'not-found' | 'skipped';
+      reason?: string;
+      oldPrice?: number;
+      newPrice?: number;
+    }> = [];
+
+    const { patch } = body;
+    if (!patch || (patch.percent === undefined && patch.delta === undefined)) {
+      return { updated: 0, results: [], message: 'Empty patch — provide percent or delta' };
+    }
+
+    const byProduct = new Map<string, BulkVariantTargetDto[]>();
+    for (const t of body.targets ?? []) {
+      if (!t?.productId) continue;
+      const list = byProduct.get(t.productId) ?? [];
+      list.push(t);
+      byProduct.set(t.productId, list);
+    }
+
+    let updatedCount = 0;
+    for (const [productId, targets] of byProduct.entries()) {
+      const doc = await this.model.findById(new Types.ObjectId(productId));
+      if (!doc) {
+        for (const t of targets)
+          results.push({ productId, variantId: t.variantId, sku: t.sku, status: 'not-found' });
+        continue;
+      }
+
+      let touched = false;
+      for (const t of targets) {
+        const idx = t.variantId
+          ? doc.variants.findIndex(
+              (x) => String((x as unknown as { _id?: Types.ObjectId })._id) === String(t.variantId),
+            )
+          : t.sku
+            ? doc.variants.findIndex((x) => x.sku === t.sku)
+            : -1;
+        if (idx < 0) {
+          results.push({ productId, variantId: t.variantId, sku: t.sku, status: 'not-found' });
+          continue;
+        }
+        const v = doc.variants[idx];
+        const oldPrice = v.price ?? 0;
+        let newPrice = oldPrice;
+        if (patch.percent !== undefined)
+          newPrice = Math.round((oldPrice * (100 + patch.percent)) / 100);
+        if (patch.delta !== undefined) newPrice = newPrice + patch.delta;
+        if (newPrice < 0) newPrice = 0;
+        if (newPrice === oldPrice) {
+          const vid = String((v as unknown as { _id?: Types.ObjectId })._id ?? '');
+          results.push({
+            productId,
+            variantId: vid,
+            sku: v.sku,
+            status: 'skipped',
+            reason: 'no-change',
+            oldPrice,
+            newPrice,
+          });
+          continue;
+        }
+        v.price = newPrice;
+        touched = true;
+        updatedCount += 1;
+        {
+          const vid = String((v as unknown as { _id?: Types.ObjectId })._id ?? '');
+          results.push({
+            productId,
+            variantId: vid,
+            sku: v.sku,
+            status: 'ok',
+            oldPrice,
+            newPrice,
+          });
+        }
+      }
+
+      if (touched) {
+        await (doc as HydratedDocument<Product>).save();
+      }
+    }
+
+    return { updated: updatedCount, results };
   }
 }

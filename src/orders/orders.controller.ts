@@ -13,8 +13,14 @@ export class OrdersController {
   @ApiOperation({ summary: 'Создать заказ' })
   @Throttle({
     orders: {
-      limit: Number(process.env.ORDERS_RATE_LIMIT ?? 5),
-      ttl: Number(process.env.ORDERS_RATE_TTL_SEC ?? 60) * 1000,
+      // Lenient defaults in dev (see AppModule throttlers 'orders')
+      limit: Number(
+        process.env.ORDERS_RATE_LIMIT ?? (process.env.NODE_ENV === 'production' ? 5 : 1000),
+      ),
+      ttl:
+        Number(
+          process.env.ORDERS_RATE_TTL_SEC ?? (process.env.NODE_ENV === 'production' ? 60 : 1),
+        ) * 1000,
     },
   })
   @ApiBody({

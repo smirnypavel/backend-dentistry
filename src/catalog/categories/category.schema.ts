@@ -14,6 +14,9 @@ export class Category {
   @Prop({ trim: true })
   description?: string;
 
+  @Prop({ trim: true })
+  imageUrl?: string;
+
   @Prop({ type: Number, default: 0 })
   sort?: number;
 

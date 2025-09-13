@@ -22,6 +22,10 @@ export class CreateCategoryDto {
   @IsOptional()
   description?: string;
 
+  @IsString()
+  @IsOptional()
+  imageUrl?: string;
+
   @IsInt()
   @Min(0)
   @IsOptional()
@@ -45,6 +49,10 @@ export class UpdateCategoryDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @IsString()
+  @IsOptional()
+  imageUrl?: string;
 
   @IsInt()
   @Min(0)

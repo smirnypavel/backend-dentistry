@@ -14,6 +14,9 @@ export class Country {
   @Prop({ required: true, lowercase: true, trim: true })
   slug!: string;
 
+  @Prop()
+  flagUrl?: string;
+
   @Prop({ type: Boolean, default: true })
   isActive!: boolean;
 }

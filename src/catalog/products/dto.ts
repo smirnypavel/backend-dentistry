@@ -93,6 +93,31 @@ export class FindProductsQueryDto {
   tags?: string[];
 
   @ApiPropertyOptional({
+    description:
+      'Variant options filter map collected automatically from query params like opt.<key>=<value> (e.g. opt.size=2g&opt.shade=A2). Repeat params for OR conditions.',
+    type: 'object',
+    additionalProperties: { type: 'array', items: { type: 'string' } },
+  })
+  @IsOptional()
+  @Transform(({ obj }) => {
+    const res: Record<string, string[]> = {};
+    const source = (obj ?? {}) as Record<string, unknown>;
+    for (const [k, v] of Object.entries(source)) {
+      if (!k.startsWith('opt.')) continue;
+      const key = k.slice(4).trim();
+      if (!key) continue;
+      const values = Array.isArray(v) ? (v as unknown[]) : [v];
+      const strs = values
+        .filter((x) => x !== undefined && x !== null)
+        .map((x) => String(x as unknown));
+      if (!res[key]) res[key] = [];
+      res[key].push(...strs);
+    }
+    return res;
+  })
+  opt?: Record<string, string[]>;
+
+  @ApiPropertyOptional({
     description: 'Sort expression, e.g. -priceMin,title',
     default: '-createdAt',
   })

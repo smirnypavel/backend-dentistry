@@ -6,6 +6,29 @@ export type OrderDocument = HydratedDocument<Order>;
 export type OrderStatus = 'new' | 'processing' | 'done' | 'cancelled';
 
 @Schema({ _id: false, timestamps: false })
+export class AppliedDiscountSnapshot {
+  @Prop({ required: true })
+  discountId!: string;
+
+  @Prop({ required: true })
+  name!: string;
+
+  @Prop({ required: true, enum: ['percent', 'fixed'] })
+  type!: 'percent' | 'fixed';
+
+  @Prop({ required: true })
+  value!: number;
+
+  @Prop({ required: true })
+  priceBefore!: number;
+
+  @Prop({ required: true })
+  priceAfter!: number;
+}
+
+const AppliedDiscountSnapshotSchema = SchemaFactory.createForClass(AppliedDiscountSnapshot);
+
+@Schema({ _id: false, timestamps: false })
 export class OrderItemSnapshot {
   @Prop({ type: Types.ObjectId, required: true })
   productId!: Types.ObjectId;
@@ -18,6 +41,9 @@ export class OrderItemSnapshot {
 
   @Prop({ required: true })
   price!: number; // unit price at time of order
+
+  @Prop({ required: true })
+  priceOriginal!: number; // original unit price before discounts
 
   @Prop({ required: true, trim: true })
   title!: string; // product title snapshot
@@ -33,6 +59,9 @@ export class OrderItemSnapshot {
 
   @Prop({ trim: true })
   unit?: string;
+
+  @Prop({ type: [AppliedDiscountSnapshotSchema], default: [] })
+  discountsApplied?: AppliedDiscountSnapshot[];
 }
 
 const OrderItemSnapshotSchema = SchemaFactory.createForClass(OrderItemSnapshot);

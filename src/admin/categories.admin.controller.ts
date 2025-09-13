@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { ApiOperation, ApiSecurity, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { Model, Types } from 'mongoose';
 import { Category, CategoryDocument } from '../catalog/categories/category.schema';
 import { CreateCategoryDto, UpdateCategoryDto } from '../catalog/categories/dto';
@@ -9,6 +9,7 @@ import { AdminGuard } from './admin.guard';
 @ApiTags('admin:categories')
 @UseGuards(AdminGuard)
 @ApiSecurity('x-api-key')
+@ApiBearerAuth('bearer')
 @Controller('admin/categories')
 export class AdminCategoriesController {
   constructor(@InjectModel(Category.name) private readonly model: Model<CategoryDocument>) {}

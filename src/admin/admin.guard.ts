@@ -5,21 +5,30 @@ import {
   UnauthorizedException,
   ForbiddenException,
 } from '@nestjs/common';
+import { AdminAuthService } from '../admin-auth/admin-auth.service';
 
 @Injectable()
 export class AdminGuard implements CanActivate {
-  canActivate(context: ExecutionContext): boolean {
+  constructor(private readonly auth: AdminAuthService) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<{ headers: Record<string, unknown> }>();
     const hdr = req.headers['x-api-key'];
     const provided = typeof hdr === 'string' ? hdr : undefined;
-    if (!provided) {
-      throw new UnauthorizedException('Missing x-api-key');
-    }
     const expected = process.env.ADMIN_API_KEY;
-    if (!expected) {
-      throw new ForbiddenException('Admin API key is not configured');
+
+    // accept either x-api-key (legacy) or Bearer token
+    if (provided && expected) {
+      if (provided !== expected) throw new ForbiddenException('Invalid admin API key');
+      return true;
     }
-    if (provided !== expected) {
+
+    const authHeader =
+      typeof req.headers['authorization'] === 'string' ? req.headers['authorization'] : undefined;
+    const ok = await this.auth.verifyBearerToken(authHeader);
+    if (!ok) {
+      if (!provided) throw new UnauthorizedException('Missing x-api-key or Bearer token');
+      if (!expected) throw new ForbiddenException('Admin API key is not configured');
       throw new ForbiddenException('Invalid admin API key');
     }
     return true;

@@ -1,44 +1,100 @@
 # Admin API Guide
 
-Secure base: All admin endpoints require the header `x-api-key: <ADMIN_API_KEY>` and are prefixed with `/admin`.
+Secure base: All admin endpoints are prefixed with `/admin` and require authorization.
+
+Auth options (either is accepted):
+
+- Legacy: Header `x-api-key: <ADMIN_API_KEY>`
+- New: Header `Authorization: Bearer <JWT>` (получить токен через `/admin/auth/login`)
 
 - Base URL (local): `http://localhost:3000`
-- Auth header: `x-api-key`
-- Content-Type: `application/json`
+- Default Content-Type: `application/json` (кроме загрузок изображений)
+
+Во всех примерах ниже показан заголовок `x-api-key` для краткости; вместо него можно использовать `Authorization: Bearer <JWT>` (получите токен через `/admin/auth/login`).
 
 Common responses
 
 - 200 OK — successful read/update/delete
 - 201 Created — successful creation
 - 400 Bad Request — validation error или конфликт (например, дублирующийся SKU варианта)
-- 401 Unauthorized — отсутствует заголовок `x-api-key`
-- 403 Forbidden — неверный `x-api-key` или ключ администратора не сконфигурирован
+- 401 Unauthorized — отсутствует авторизация (`x-api-key` или `Authorization: Bearer ...`)
+- 403 Forbidden — неверный `x-api-key`, невалидный/просроченный Bearer токен, или ключ администратора не сконфигурирован
 - 404 Not Found — ресурс не найден (актуально для эндпоинтов вариантов товара и PATCH товара)
 
-Auth errors (примеры):
+Auth errors (примеры)
 
 ```
-// 401 Missing key
+// 401 Missing key (x-api-key)
 {
   "statusCode": 401,
   "message": "Missing x-api-key",
   "error": "Unauthorized"
 }
 
-// 403 Admin key not configured
+// 403 Admin key not configured (x-api-key)
 {
   "statusCode": 403,
   "message": "Admin API key is not configured",
   "error": "Forbidden"
 }
 
-// 403 Invalid key
+// 403 Invalid key (x-api-key)
 {
   "statusCode": 403,
   "message": "Invalid admin API key",
   "error": "Forbidden"
 }
+
+// 401 Missing Bearer token
+{
+  "statusCode": 401,
+  "message": "Missing Authorization: Bearer token",
+  "error": "Unauthorized"
+}
+
+// 403 Invalid/expired Bearer token
+{
+  "statusCode": 403,
+  "message": "Invalid or expired token",
+  "error": "Forbidden"
+}
 ```
+
+---
+
+## Auth (администраторы)
+
+Base: `/admin/auth`
+
+- POST `/admin/auth/login` — логин и получение JWT
+  - Body: `{ "username": "admin", "password": "secret" }`
+  - Response: `{ "accessToken": "<JWT>" }`
+  - Далее используйте `Authorization: Bearer <JWT>` для всех `/admin/*` запросов (или `x-api-key`).
+
+Примеры:
+
+```bash
+# Получить JWT
+curl -X POST "http://localhost:3000/admin/auth/login" \
+  -H "content-type: application/json" \
+  -d '{"username":"admin","password":"secret"}'
+
+# Запрос с Bearer токеном
+curl -H "Authorization: Bearer $ADMIN_JWT" \
+  "http://localhost:3000/admin/products?page=1&limit=20"
+```
+
+- GET `/admin/auth/users` — список администраторов
+  - Security: Требуется Bearer или `x-api-key`
+  - Response: `[{ _id, username, createdAt, updatedAt }, ...]`
+
+- POST `/admin/auth/users` — создать нового администратора
+  - Body: `{ "username": "manager", "password": "verysecret" }`
+  - Response: `{ _id, username, createdAt, updatedAt }`
+
+- При старте сервера первый админ создаётся автоматически из ENV (`ADMIN_BOOTSTRAP_USERNAME`/`ADMIN_BOOTSTRAP_PASSWORD`), если такого пользователя ещё нет.
+
+Примечание: Ролей нет — у всех администраторов одинаковые права.
 
 ---
 
@@ -81,77 +137,81 @@ Variant shape
   options: Record<string, string|number>,
   price: number,
   unit?: string,
-  images?: string[],
-  barcode?: string,
-  isActive: boolean,
-  variantKey?: string
-}
-```
-
-### List products
-
-GET `/admin/products`
-
-Query params:
-
-- `q?: string` — full-text search by title/description
-- `sort?: string` — e.g. `-createdAt,title`
-- `page?: number` — default 1
-- `limit?: number` — default 20, max 50
-
-Responses:
-
-- 200 OK
 
 ```
+
 {
-  "items": [
-    {
-      "_id": "665f1a2b3c4d5e6f7a8b9c0d",
-      "slug": "universal-composite",
-      "title": "Композит универсальный",
-      "description": "Описание...",
-      "categoryIds": [],
-      "tags": ["popular"],
-      "images": [],
-      "attributes": [{"key":"purpose","value":"restoration"}],
-      "variants": [
-        {
-          "_id": "665f0000000000000000a001",
-          "sku": "UC-1",
-          "manufacturerId": "665f00000000000000001001",
-          "countryId": "665f00000000000000002001",
-          "options": {"shade":"A2","size":"2g"},
-          "price": 350,
-          "unit": "шт",
-          "images": [],
-          "barcode": "482000000001",
-          "isActive": true,
-          "variantKey": "..."
-        }
-      ],
-      "manufacturerIds": [],
-      "countryIds": [],
-      "priceMin": 350,
-      "priceMax": 480,
-      "optionsSummary": {"shade":["A2"]},
-      "isActive": true,
-      "createdAt": "2025-09-10T12:00:00.000Z",
-      "updatedAt": "2025-09-10T12:00:00.000Z"
-    }
-  ],
-  "page": 1,
-  "limit": 20,
-  "total": 1
+"slug": "universal-composite", // если пустой — будет сгенерирован из title
+"title": "Композит универсальный",
+"description": "Описание",
+"categoryIds": ["<catId>"],
+"tags": ["popular"],
+"images": ["https://.../1.jpg"],
+"attributes": [{"key": "purpose", "value": "restoration"}],
+"variants": [
+{
+"sku": "UC-A2-2G",
+"manufacturerId": "<manufacturerId>",
+"countryId": "<countryId>",
+"options": { "shade": "A2", "size": "2g" },
+"price": 350,
+"unit": "шт",
+"images": [],
+"barcode": "482...",
+"isActive": true
 }
-```
+],
+"isActive": true
+}
+}
+],
+"manufacturerIds": [],
+"countryIds": [],
+"priceMin": 350,
+"priceMax": 480,
+"optionsSummary": {"shade":["A2"]},
+"isActive": true,
+"createdAt": "2025-09-10T12:00:00.000Z",
+"updatedAt": "2025-09-10T12:00:00.000Z"
+}
+],
+"page": 1,
+"limit": 20,
+"total": 1
+}
+
+````
 
 Example:
 
 ```bash
 curl -H "x-api-key: $ADMIN_API_KEY" \
   "http://localhost:3000/admin/products?q=comp&sort=-createdAt&page=1&limit=20"
+````
+
+Examples with filters:
+
+```bash
+# By category
+curl -H "x-api-key: $ADMIN_API_KEY" \
+  "http://localhost:3000/admin/products?category=665f0000000000000000c001&sort=-createdAt"
+
+# By multiple manufacturers
+curl -H "x-api-key: $ADMIN_API_KEY" \
+  "http://localhost:3000/admin/products?manufacturerId=665f00000000000000001001&manufacturerId=665f00000000000000001002"
+
+# By countries and tags, only active
+curl -H "x-api-key: $ADMIN_API_KEY" \
+  "http://localhost:3000/admin/products?countryId=665f00000000000000002001&countryId=665f00000000000000002002&tags=sale&tags=popular&isActive=true"
+
+# By variant options (opt.<key>=<value>)
+curl -H "x-api-key: $ADMIN_API_KEY" \
+  "http://localhost:3000/admin/products?opt.size=2g&opt.shade=A2"
 ```
+
+Note:
+
+- Variant options live inside `variants[*].options` and are matched within any variant (`$elemMatch`). If multiple `opt.*` keys are provided, all must match within the same variant; multiple values for the same key act as OR.
 
 ### Get product
 
@@ -194,30 +254,57 @@ POST `/admin/products`
 
 Body:
 
-```
+````
 {
   "slug": "universal-composite",           // если пустой — будет сгенерирован из title
   "title": "Композит универсальный",
   "description": "Описание",
-  "categoryIds": ["<catId>"] ,
-  "tags": ["popular"],
-  "images": ["https://.../1.jpg"],
-  "attributes": [{"key": "purpose", "value": "restoration"}],
+- `q?: string` — full-text search by title/description
+- `category?: string` — filter by category ObjectId (matches products having this category)
+- `manufacturerId[]?: string[]` — filter by one or more manufacturer ObjectIds (product having any of these)
+- `countryId[]?: string[]` — filter by one or more country ObjectIds (product having any of these)
+- `tags[]?: string[]` — filter by any of the specified tags
+- `isActive?: boolean` — filter by active state
+- `sort?: string` — e.g. `-createdAt,title`
+- `page?: number` — default 1
+- `limit?: number` — default 20, max 50
   "variants": [
     {
       "sku": "UC-A2-2G",
       "manufacturerId": "<manufacturerId>",
       "countryId": "<countryId>",
       "options": { "shade": "A2", "size": "2g" },
+
+Examples with filters:
+
+```bash
+# By category
+curl -H "x-api-key: $ADMIN_API_KEY" \
+  "http://localhost:3000/admin/products?category=665f0000000000000000c001&sort=-createdAt"
+
+# By multiple manufacturers
+curl -H "x-api-key: $ADMIN_API_KEY" \
+  "http://localhost:3000/admin/products?manufacturerId=665f00000000000000001001&manufacturerId=665f00000000000000001002"
+
+# By countries and tags, only active
+curl -H "x-api-key: $ADMIN_API_KEY" \
+  "http://localhost:3000/admin/products?countryId=665f00000000000000002001&countryId=665f00000000000000002002&tags=sale&tags=popular&isActive=true"
+````
+
       "price": 350,
       "unit": "шт",
       "images": [],
       "barcode": "482...",
       "isActive": true
     }
-  ],
-  "isActive": true
-}
+
+],
+"isActive": true
+Примечания:
+Примечания:
+Примечания:
+Примечания:
+
 ```
 
 Notes:
@@ -230,14 +317,16 @@ Responses:
 - 201 Created — созданный продукт
 
 ```
-{ /* Product */ }
-```
+
+{ /_ Product _/ }
+
+````
 
 ```bash
 curl -X POST -H "x-api-key: $ADMIN_API_KEY" -H "Content-Type: application/json" \
   -d '{"slug":"","title":"Композит","variants":[{"sku":"UC-A2-2G","manufacturerId":"<mid>","price":350}]}' \
   http://localhost:3000/admin/products
-```
+````
 
 ### Update product
 
@@ -375,10 +464,197 @@ Responses:
 { /* Product */ }
 ```
 
+### Bulk update variants
+
+PATCH `/admin/products/bulk/variants`
+
+- Purpose: Массовое изменение параметров вариантов (например, цена, активность, единица измерения) для списка товаров.
+- Security: `x-api-key` или `Authorization: Bearer <JWT>`
+- Body:
+
+```
+{
+  "targets": [
+    { "productId": "665f...001", "variantId": "665f...a001" },
+    { "productId": "665f...001", "sku": "UC-A2-2G" },
+    { "productId": "665f...002", "sku": "GP-4G" }
+  ],
+  "patch": {
+    "price": 399,
+    "isActive": true,
+    "unit": "шт"
+  }
+}
+```
+
+Response `200 OK`:
+
+```
+{
+  "updated": 3,
+  "results": [
+    { "productId": "665f...001", "variantId": "665f...a001", "sku": "UC-A2-2G", "status": "ok" },
+    { "productId": "665f...001", "variantId": "665f...a002", "sku": "UC-A3-4G", "status": "ok" },
+    { "productId": "665f...002", "variantId": "665f...b001", "sku": "GP-4G", "status": "ok" }
+  ]
+}
+```
+
+Notes:
+
+- Для каждого затронутого товара пересчитываются агрегаты (цены, свод опций и пр.).
+- Если указаны и `variantId`, и `sku`, приоритет у `variantId`.
+- Если `patch` пустой — ответ будет `updated: 0` без модификаций.
+
 ```bash
 curl -X DELETE -H "x-api-key: $ADMIN_API_KEY" \
   http://localhost:3000/admin/products/<productId>/variants/<variantId>
 ```
+
+### Bulk toggle products active
+
+PATCH `/admin/products/bulk/active`
+
+- Purpose: Массово включить/выключить товары (поле `isActive`).
+- Security: `x-api-key` или `Authorization: Bearer <JWT>`
+- Body:
+
+```
+{
+  "productIds": ["665f...001", "665f...002", "665f...003"],
+  "isActive": false
+}
+```
+
+Response `200 OK`:
+
+```
+{ "matched": 3, "modified": 3 }
+```
+
+Example:
+
+```bash
+curl -X PATCH -H "x-api-key: $ADMIN_API_KEY" -H "Content-Type: application/json" \
+  -d '{"productIds":["665f0000000000000000p001","665f0000000000000000p002"],"isActive":true}' \
+  http://localhost:3000/admin/products/bulk/active
+```
+
+### Bulk add/remove product tags
+
+PATCH `/admin/products/bulk/tags/add` и `/admin/products/bulk/tags/remove`
+
+- Purpose: Массово добавить или удалить теги для набора товаров.
+- Body:
+
+```
+{
+  "productIds": ["665f...001", "665f...002"],
+  "tags": ["sale", "popular"]
+}
+```
+
+Response `200 OK` (обе операции):
+
+```
+{ "matched": 2, "modified": 2 }
+```
+
+Examples:
+
+```bash
+# Add tags
+curl -X PATCH -H "x-api-key: $ADMIN_API_KEY" -H "Content-Type: application/json" \
+  -d '{"productIds":["665f...001","665f...002"],"tags":["sale","popular"]}' \
+  http://localhost:3000/admin/products/bulk/tags/add
+
+# Remove tags
+curl -X PATCH -H "x-api-key: $ADMIN_API_KEY" -H "Content-Type: application/json" \
+  -d '{"productIds":["665f...001","665f...002"],"tags":["popular"]}' \
+  http://localhost:3000/admin/products/bulk/tags/remove
+```
+
+### Bulk add/remove product categories
+
+PATCH `/admin/products/bulk/categories/add` и `/admin/products/bulk/categories/remove`
+
+- Purpose: Массово привязать/отвязать категории (`categoryIds`) у набора товаров.
+- Body:
+
+```
+{
+  "productIds": ["665f...001", "665f...002"],
+  "categoryIds": ["665f0000000000000000c001", "665f0000000000000000c002"]
+}
+```
+
+Response `200 OK` (обе операции):
+
+```
+{ "matched": 2, "modified": 2 }
+```
+
+Examples:
+
+```bash
+# Add categories
+curl -X PATCH -H "x-api-key: $ADMIN_API_KEY" -H "Content-Type: application/json" \
+  -d '{"productIds":["665f...001","665f...002"],"categoryIds":["665f0000000000000000c001","665f0000000000000000c002"]}' \
+  http://localhost:3000/admin/products/bulk/categories/add
+
+# Remove categories
+curl -X PATCH -H "x-api-key: $ADMIN_API_KEY" -H "Content-Type: application/json" \
+  -d '{"productIds":["665f...001","665f...002"],"categoryIds":["665f0000000000000000c001"]}' \
+  http://localhost:3000/admin/products/bulk/categories/remove
+```
+
+### Bulk adjust variant prices
+
+PATCH `/admin/products/bulk/variants/adjust-price`
+
+- Purpose: Массово изменить цены вариантов по целям (по `productId` + `variantId` или `sku`).
+- Security: `x-api-key` или `Authorization: Bearer <JWT>`
+- Body (укажите ровно одно или оба поля `percent`/`delta`):
+
+```
+{
+  "targets": [
+    { "productId": "665f...001", "variantId": "665f...a001" },
+    { "productId": "665f...001", "sku": "UC-A2-2G" },
+    { "productId": "665f...002", "sku": "GP-4G" }
+  ],
+  "patch": {
+    "percent": 5,   // +5%
+    "delta": -10    // затем -10
+  }
+}
+```
+
+Response `200 OK`:
+
+```
+{
+  "updated": 3,
+  "results": [
+    {
+      "productId": "665f...001",
+      "variantId": "665f...a001",
+      "sku": "UC-A2-2G",
+      "status": "ok",
+      "oldPrice": 350,
+      "newPrice": 358
+    },
+    { "productId": "665f...001", "variantId": "665f...a002", "sku": "UC-A3-4G", "status": "ok", "oldPrice": 420, "newPrice": 431 },
+    { "productId": "665f...002", "variantId": "665f...b001", "sku": "GP-4G", "status": "ok", "oldPrice": 500, "newPrice": 515 }
+  ]
+}
+```
+
+Notes:
+
+- Итоговая цена не может быть отрицательной; значения округляются до целого.
+- Если цена не меняется (после применения percent/delta), такой элемент помечается `status: "skipped"`.
+- Для каждого затронутого товара пересчитываются агрегаты.
 
 ---
 
@@ -417,17 +693,28 @@ Responses:
           "productId": "665f1a2b3c4d5e6f7a8b9c0d",
           "sku": "UC-1",
           "quantity": 2,
-          "price": 350,
+          "price": 315,
+          "priceOriginal": 350,
           "title": "Композит универсальный",
           "options": {"shade":"A2"},
           "manufacturerId": "665f00000000000000001001",
           "countryId": "665f00000000000000002001",
-          "unit": "шт"
+          "unit": "шт",
+          "discountsApplied": [
+            {
+              "discountId": "6677000000000000000000d1",
+              "name": "Осенняя распродажа",
+              "type": "percent",
+              "value": 10,
+              "priceBefore": 350,
+              "priceAfter": 315
+            }
+          ]
         }
       ],
-      "itemsTotal": 700,
+      "itemsTotal": 630,
       "deliveryFee": 0,
-      "total": 700,
+      "total": 630,
       "status": "new",
       "createdAt": "2025-09-10T12:00:00.000Z"
     }
@@ -500,6 +787,7 @@ Base: `/admin/countries`
       "code": "UA",
       "name": "Ukraine",
       "slug": "ukraine",
+      "flagUrl": null,
       "isActive": true,
       "createdAt": "2025-09-10T12:00:00.000Z",
       "updatedAt": "2025-09-10T12:00:00.000Z"
@@ -509,7 +797,7 @@ Base: `/admin/countries`
 - GET `/admin/countries/:id` — получить по id
   - 200 OK — `Country | null`
 - POST `/admin/countries` — создать
-  - Body: `{ code: string; name: string; slug: string; isActive?: boolean }`
+  - Body: `{ code: string; name: string; slug: string; flagUrl?: string; isActive?: boolean }`
   - 201 Created — созданный `Country`
 - PATCH `/admin/countries/:id` — обновить
   - Body: частичное обновление тех же полей
@@ -564,7 +852,7 @@ Base: `/admin/categories`
 - GET `/admin/categories/:id` — получить по id
   - 200 OK — `Category | null`
 - POST `/admin/categories` — создать
-  - Body: `{ slug: string; name: string; description?: string; sort?: number; isActive?: boolean }`
+  - Body: `{ slug: string; name: string; description?: string; imageUrl?: string; sort?: number; isActive?: boolean }`
   - 201 Created — созданная `Category`
 - PATCH `/admin/categories/:id` — обновить
   - 200 OK — обновлённая `Category` или `null`
@@ -581,10 +869,254 @@ curl -X POST -H "x-api-key: $ADMIN_API_KEY" -H "Content-Type: application/json" 
 
 ---
 
+## Uploads
+
+Base: `/admin/uploads`
+
+- POST `/admin/uploads/image` — загрузить одно изображение в Cloudinary
+  - Consumes: `multipart/form-data`
+  - Body: `file` (binary), `folder?: string` — например: `products`, `categories`, `manufacturers`
+  - Response 200 OK:
+
+  ```
+  {
+    "url": "http://res.cloudinary.com/.../image/upload/v.../abc.jpg",
+    "secure_url": "https://res.cloudinary.com/.../image/upload/v.../abc.jpg",
+    "public_id": "products/abc",
+    "width": 1024,
+    "height": 768,
+    "format": "jpg"
+  }
+  ```
+
+  - Примечания:
+    - Значение `public_id` можно хранить, если потребуется удаление файла через Cloudinary.
+    - Для категорий/производителей/товаров/стран сохраняйте URL из ответа:
+      - Category: `imageUrl`
+      - Manufacturer: `logoUrl` и/или `bannerUrl`
+      - Product: `images[]` на уровне товара, либо `variants[*].images[]` для варианта
+      - Country: `flagUrl`
+    - Рекомендуемые папки: `products`, `categories`, `manufacturers`, `countries`.
+
+### Как загружать изображения и обновлять сущности
+
+1. Загрузите файл через `/admin/uploads/image` с нужной папкой:
+
+```bash
+curl -X POST "http://localhost:3000/admin/uploads/image" \
+  -H "x-api-key: $ADMIN_API_KEY" \
+  -H "Content-Type: multipart/form-data" \
+  -F "file=@/absolute/path/to/image.jpg" \
+  -F "folder=products"
+```
+
+2. Сохраните полученный URL в сущность соответствующим админ-эндпоинтом:
+
+- Продукт (добавить картинку товара):
+
+```bash
+curl -X PATCH -H "x-api-key: $ADMIN_API_KEY" -H "Content-Type: application/json" \
+  -d '{"images":["https://res.cloudinary.com/.../image/upload/v.../prod-1.jpg"]}' \
+  http://localhost:3000/admin/products/<productId>
+```
+
+- Продукт (добавить картинку варианта):
+
+```bash
+curl -X PATCH -H "x-api-key: $ADMIN_API_KEY" -H "Content-Type: application/json" \
+  -d '{"images":["https://res.cloudinary.com/.../image/upload/v.../var-1.jpg"]}' \
+  http://localhost:3000/admin/products/<productId>/variants/<variantId>
+```
+
+- Категория:
+
+```bash
+curl -X PATCH -H "x-api-key: $ADMIN_API_KEY" -H "Content-Type: application/json" \
+  -d '{"imageUrl":"https://res.cloudinary.com/.../image/upload/v.../cat.jpg"}' \
+  http://localhost:3000/admin/categories/<categoryId>
+```
+
+- Производитель:
+
+```bash
+curl -X PATCH -H "x-api-key: $ADMIN_API_KEY" -H "Content-Type: application/json" \
+  -d '{"logoUrl":"https://res.cloudinary.com/.../image/upload/v.../logo.jpg","bannerUrl":"https://res.cloudinary.com/.../image/upload/v.../banner.jpg"}' \
+  http://localhost:3000/admin/manufacturers/<manufacturerId>
+```
+
+- Страна:
+
+```bash
+curl -X PATCH -H "x-api-key: $ADMIN_API_KEY" -H "Content-Type: application/json" \
+  -d '{"flagUrl":"https://res.cloudinary.com/.../image/upload/v.../ua-flag.png"}' \
+  http://localhost:3000/admin/countries/<countryId>
+```
+
+---
+
+## Discounts (скидки)
+
+Base: `/admin/discounts`
+
+Discount model (admin):
+
+```
+{
+  _id: string,
+  name: string,
+  description?: string,
+  type: 'percent' | 'fixed',
+  value: number,          // percent: 0..100; fixed: валютные единицы
+  isActive: boolean,
+  startsAt?: string,      // ISO
+  endsAt?: string,        // ISO
+  priority: number,       // больший применяется позже (для stackable) или выигрывает (для non-stackable)
+  stackable: boolean,
+  productIds: string[],
+  categoryIds: string[],
+  manufacturerIds: string[],
+  countryIds: string[],
+  tags: string[],
+  createdAt: string,
+  updatedAt: string
+}
+```
+
+Правила применения:
+
+- Учитываются только активные скидки в интервале дат (`startsAt`/`endsAt`).
+- Таргетинг: скидка подходит, если совпадает хотя бы одна сущность каждой указанной группы. Пустой массив в группе означает "нет ограничения".
+- Нестекаемые (`stackable=false`): выбирается одна лучшая, дающая минимальную цену.
+- Стекаемые (`stackable=true`): применяются последовательно по возрастанию `priority` к результату предыдущего шага.
+
+### List discounts
+
+GET `/admin/discounts`
+
+Query params:
+
+- `q?: string` — search by name (case-insensitive)
+- `isActive?: boolean` — filter by active state
+- `sort?: string` — comma-separated fields, prefix with `-` for descending (default `-createdAt`)
+- `page?: number` — default 1
+- `limit?: number` — default 20, max 50
+
+Response `200 OK`:
+
+```
+{ items: Discount[], page: number, limit: number, total: number }
+```
+
+### Get discount
+
+GET `/admin/discounts/:id`
+
+Response `200 OK`: `Discount | null`
+
+### Create discount
+
+POST `/admin/discounts`
+
+Body:
+
+```
+{
+  "name":"Autumn Sale",
+  "type":"percent",
+  "value":10,
+  "isActive":true,
+  "startsAt":"2025-09-01T00:00:00.000Z",
+  "endsAt":"2025-09-30T23:59:59.999Z",
+  "priority":10,
+  "stackable":false,
+  "categoryIds":["<catId>"]
+}
+```
+
+Response `201 Created`: `Discount`
+
+### Update discount
+
+PATCH `/admin/discounts/:id`
+
+Body: любые поля из модели (частичное обновление)
+
+Response `200 OK`: `Discount | null`
+
+### Bulk manage discount targets
+
+PATCH `/admin/discounts/:id/targets`
+
+- Purpose: Idемпотентное добавление таргетов к существующей скидке.
+- Security: `x-api-key` или `Authorization: Bearer <token>`
+- Body (любой поднабор полей):
+
+```
+{
+  "productIds": ["<productId>", "..."],
+  "categoryIds": ["<categoryId>"],
+  "manufacturerIds": ["<manufacturerId>"],
+  "countryIds": ["<countryId>"],
+  "tags": ["consumables", "sale"]
+}
+```
+
+Поведение: `$addToSet` с `$each` — дубликаты не добавляются. Пустые/отсутствующие поля игнорируются.
+
+Пример:
+
+```bash
+curl -X PATCH "http://localhost:3000/admin/discounts/665aa.../targets" \
+  -H "x-api-key: $ADMIN_API_KEY" \
+  -H "content-type: application/json" \
+  -d '{
+    "categoryIds": ["665ab..."],
+    "manufacturerIds": ["665ac..."],
+    "tags": ["summer", "-clearance"]
+  }'
+```
+
+PATCH `/admin/discounts/:id/targets/remove`
+
+- Purpose: Массовое удаление таргетов из скидки.
+- Security: `x-api-key` или `Authorization: Bearer <token>`
+- Body: аналогичен предыдущему.
+
+Поведение: `$pull` с `$in` — удаляет указанные элементы из соответствующих массивов. Пустые/отсутствующие поля игнорируются.
+
+Пример:
+
+```bash
+curl -X PATCH "http://localhost:3000/admin/discounts/665aa.../targets/remove" \
+  -H "Authorization: Bearer $ADMIN_JWT" \
+  -H "content-type: application/json" \
+  -d '{
+    "productIds": ["665ad..."],
+    "tags": ["-clearance"]
+  }'
+```
+
+### Delete discount
+
+DELETE `/admin/discounts/:id`
+
+Response `200 OK`: `Discount | null`
+
+Примечания:
+
+- Скидки сразу учитываются в выдаче публичной витрины (варианты получают `priceFinal` и `discountsApplied`), а в заказах сохраняются снимки применённых скидок.
+- Для прицельного эффекта можно комбинировать таргетинг по `productIds`/`categoryIds`/`manufacturerIds`/`countryIds`/`tags`.
+
+Ответ будет содержать `url` и `secure_url`. Используйте одно из них как значение соответствующего поля.
+
 ## Notes for frontend implementation
 
-- Всегда отправляйте `x-api-key` для всех эндпоинтов `/admin/*`.
+- Для всех эндпоинтов `/admin/*` используйте либо `Authorization: Bearer <JWT>`, либо `x-api-key`.
 - В товарах любые изменения массива `variants` в PATCH приводят к полному пересчёту агрегатов — не нужно вручную пересчитывать `priceMin/Max`, `optionsSummary`, `manufacturerIds`, `countryIds`.
+- Скидки: в публичной витрине ответы по товарам дополнены полями со скидками:
+  - на уровне варианта: `priceOriginal`, `priceFinal`, `discountsApplied[]` (в порядке применения)
+  - на уровне товара: `priceMinFinal`, `priceMaxFinal` — рассчитаны по активным вариантам
+    Эти поля не меняют исходные `priceMin/priceMax` и `variants[*].price` (они остаются исходными ценами без скидок).
 - Для добавления/редактирования одного варианта используйте специальные эндпоинты `/variants` — это удобнее и безопаснее, чем править весь массив.
 - `phone` в заказах фильтруется по нормализованному виду (E.164). Если на фронте номера в свободном формате — приведите к `+XXXXXXXXXXX`.
 - Ошибки 400 для варианта товара означают конфликт SKU в рамках одного товара.
@@ -719,6 +1251,7 @@ curl -X POST -H "x-api-key: $ADMIN_API_KEY" -H "Content-Type: application/json" 
     "sku": { "type": "string" },
     "quantity": { "type": "number", "minimum": 1 },
     "price": { "type": "number" },
+    "priceOriginal": { "type": "number" },
     "title": { "type": "string" },
     "options": {
       "type": "object",
@@ -727,9 +1260,26 @@ curl -X POST -H "x-api-key: $ADMIN_API_KEY" -H "Content-Type: application/json" 
     },
     "manufacturerId": { "type": ["string", "null"] },
     "countryId": { "type": ["string", "null"] },
-    "unit": { "type": ["string", "null"] }
+    "unit": { "type": ["string", "null"] },
+    "discountsApplied": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "discountId": { "type": "string" },
+          "name": { "type": "string" },
+          "type": { "type": "string", "enum": ["percent", "fixed"] },
+          "value": { "type": "number" },
+          "priceBefore": { "type": "number" },
+          "priceAfter": { "type": "number" }
+        },
+        "required": ["discountId", "name", "type", "value", "priceBefore", "priceAfter"]
+      },
+      "default": []
+    }
   },
-  "required": ["productId", "sku", "quantity", "price", "title"]
+  "required": ["productId", "sku", "quantity", "price", "priceOriginal", "title"]
 }
 ```
 
@@ -774,6 +1324,7 @@ curl -X POST -H "x-api-key: $ADMIN_API_KEY" -H "Content-Type: application/json" 
     "code": { "type": "string" },
     "name": { "type": "string" },
     "slug": { "type": "string" },
+    "flagUrl": { "type": ["string", "null"] },
     "isActive": { "type": "boolean", "default": true },
     "createdAt": { "type": ["string", "null"], "format": "date-time" },
     "updatedAt": { "type": ["string", "null"], "format": "date-time" }
@@ -822,6 +1373,7 @@ curl -X POST -H "x-api-key: $ADMIN_API_KEY" -H "Content-Type: application/json" 
     "slug": { "type": "string" },
     "name": { "type": "string" },
     "description": { "type": ["string", "null"] },
+    "imageUrl": { "type": ["string", "null"] },
     "sort": { "type": ["number", "null"], "default": 0 },
     "isActive": { "type": "boolean", "default": true },
     "createdAt": { "type": ["string", "null"], "format": "date-time" },

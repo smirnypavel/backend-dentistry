@@ -10,6 +10,8 @@ import { OrdersModule } from './orders/orders.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { AdminModule } from './admin/admin.module';
+import { AdminAuthModule } from './admin-auth/admin-auth.module';
+import { DiscountsModule } from './discounts/discounts.module';
 
 @Module({
   imports: [
@@ -18,13 +20,25 @@ import { AdminModule } from './admin/admin.module';
       throttlers: [
         {
           name: 'default',
-          ttl: Number(process.env.RATE_TTL_SEC ?? 60) * 1000,
-          limit: Number(process.env.RATE_LIMIT ?? 60),
+          ttl:
+            process.env.NODE_ENV === 'production'
+              ? Number(process.env.RATE_TTL_SEC ?? 60) * 1000
+              : Number(process.env.RATE_TTL_SEC ?? 1) * 1000,
+          limit:
+            process.env.NODE_ENV === 'production'
+              ? Number(process.env.RATE_LIMIT ?? 60)
+              : Number(process.env.RATE_LIMIT ?? 10000),
         },
         {
           name: 'orders',
-          ttl: Number(process.env.ORDERS_RATE_TTL_SEC ?? 60) * 1000,
-          limit: Number(process.env.ORDERS_RATE_LIMIT ?? 5),
+          ttl:
+            process.env.NODE_ENV === 'production'
+              ? Number(process.env.ORDERS_RATE_TTL_SEC ?? 60) * 1000
+              : Number(process.env.ORDERS_RATE_TTL_SEC ?? 1) * 1000,
+          limit:
+            process.env.NODE_ENV === 'production'
+              ? Number(process.env.ORDERS_RATE_LIMIT ?? 5)
+              : Number(process.env.ORDERS_RATE_LIMIT ?? 1000),
         },
       ],
     }),
@@ -35,13 +49,20 @@ import { AdminModule } from './admin/admin.module';
     ProductsModule,
     OrdersModule,
     AdminModule,
+    AdminAuthModule,
+    DiscountsModule,
   ],
   controllers: [HealthController],
   providers: [
-    {
-      provide: APP_GUARD,
-      useClass: ThrottlerGuard,
-    },
+    // In production enable rate limiting globally; in dev it's disabled for convenience
+    ...(process.env.NODE_ENV === 'production'
+      ? ([
+          {
+            provide: APP_GUARD,
+            useClass: ThrottlerGuard,
+          },
+        ] as const)
+      : ([] as const)),
   ],
 })
 export class AppModule {}

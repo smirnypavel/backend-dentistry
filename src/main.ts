@@ -39,6 +39,15 @@ async function bootstrap() {
       },
       'x-api-key',
     )
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        description: 'Admin JWT (for future use if needed)',
+      },
+      'bearer',
+    )
     .addServer('http://localhost:3000')
     .build();
   const document = SwaggerModule.createDocument(app, config);

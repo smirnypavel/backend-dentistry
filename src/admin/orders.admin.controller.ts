@@ -4,6 +4,7 @@ import {
   ApiExtraModels,
   ApiOperation,
   ApiSecurity,
+  ApiBearerAuth,
   ApiTags,
   ApiOkResponse,
   ApiPropertyOptional,
@@ -88,6 +89,7 @@ class UpdateOrderStatusDto {
 
 @ApiTags('admin:orders')
 @ApiSecurity('x-api-key')
+@ApiBearerAuth('bearer')
 @UseGuards(AdminGuard)
 @ApiExtraModels(AdminListOrdersQueryDto)
 @Controller('admin/orders')
