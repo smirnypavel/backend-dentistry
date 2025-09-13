@@ -1,0 +1,33 @@
+version: '3.8'
+services:
+  mongo:
+    image: mongo:6
+    container_name: dentistry-mongo
+    ports:
+      - '27017:27017'
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dentistry-api
+    depends_on:
+      - mongo
+    ports:
+      - '3000:3000'
+    environment:
+      PORT: 3000
+      MONGODB_URI: mongodb://root:root@mongo:27017
+      DB_NAME: dentistry
+      ADMIN_API_KEY: changeme
+      CORS_ORIGINS: http://localhost:5173,http://localhost:3001
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
