@@ -4,8 +4,34 @@ import { ApiBearerAuth, ApiOperation, ApiSecurity, ApiTags } from '@nestjs/swagg
 import { Model, Types } from 'mongoose';
 import { Country, CountryDocument } from '../catalog/countries/country.schema';
 import { AdminGuard } from './admin.guard';
-import { IsBoolean, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
-import { Transform } from 'class-transformer';
+import {
+  IsBoolean,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+  ValidateNested,
+} from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+
+class I18nNameCreateDto {
+  @IsString()
+  uk!: string;
+
+  @IsOptional()
+  @IsString()
+  en?: string;
+}
+
+class I18nNameUpdateDto {
+  @IsOptional()
+  @IsString()
+  uk?: string;
+
+  @IsOptional()
+  @IsString()
+  en?: string;
+}
 
 class CreateCountryDto {
   @IsString()
@@ -14,7 +40,9 @@ class CreateCountryDto {
   @Transform(({ value }) => String(value).trim().toUpperCase())
   code!: string;
 
-  nameI18n!: { uk: string; en?: string };
+  @ValidateNested()
+  @Type(() => I18nNameCreateDto)
+  nameI18n!: I18nNameCreateDto;
 
   @IsString()
   @MinLength(2)
@@ -40,7 +68,9 @@ class UpdateCountryDto {
   code?: string;
 
   @IsOptional()
-  nameI18n?: { uk?: string; en?: string };
+  @ValidateNested()
+  @Type(() => I18nNameUpdateDto)
+  nameI18n?: I18nNameUpdateDto;
 
   @IsOptional()
   @IsString()

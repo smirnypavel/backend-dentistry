@@ -310,79 +310,50 @@ POST `/admin/products`
 
 Body:
 
-````
+```
 {
-  "slug": "universal-composite",           // если пустой — будет сгенерирован из title
-  "title": "Композит универсальный",
-  "description": "Описание",
-- `q?: string` — full-text search by title/description
-- `category?: string` — filter by category ObjectId (matches products having this category)
-- `manufacturerId[]?: string[]` — filter by one or more manufacturer ObjectIds (product having any of these)
-- `countryId[]?: string[]` — filter by one or more country ObjectIds (product having any of these)
-- `tags[]?: string[]` — filter by any of the specified tags
-- `isActive?: boolean` — filter by active state
-- `sort?: string` — e.g. `-createdAt,title`
-- `page?: number` — default 1
-- `limit?: number` — default 20, max 50
+  "slug": "universal-composite",           // если пустой — будет сгенерирован из titleI18n.uk
+  "titleI18n": { "uk": "Композит універсальний", "en": "Universal composite" },
+  "descriptionI18n": { "uk": "Опис", "en": "Description" },
+  "categoryIds": ["<catId>"],
+  "tags": ["popular"],
+  "images": ["https://.../1.jpg"],
+  "attributes": [{ "key": "purpose", "value": "restoration" }],
   "variants": [
     {
       "sku": "UC-A2-2G",
       "manufacturerId": "<manufacturerId>",
       "countryId": "<countryId>",
       "options": { "shade": "A2", "size": "2g" },
-
-Examples with filters:
-
-```bash
-# By category
-curl -H "x-api-key: $ADMIN_API_KEY" \
-  "http://localhost:3000/admin/products?category=665f0000000000000000c001&sort=-createdAt"
-
-# By multiple manufacturers
-curl -H "x-api-key: $ADMIN_API_KEY" \
-  "http://localhost:3000/admin/products?manufacturerId=665f00000000000000001001&manufacturerId=665f00000000000000001002"
-
-# By countries and tags, only active
-curl -H "x-api-key: $ADMIN_API_KEY" \
-  "http://localhost:3000/admin/products?countryId=665f00000000000000002001&countryId=665f00000000000000002002&tags=sale&tags=popular&isActive=true"
-````
-
       "price": 350,
       "unit": "шт",
       "images": [],
       "barcode": "482...",
       "isActive": true
     }
-
-],
-"isActive": true
-Примечания:
-Примечания:
-Примечания:
-Примечания:
-
+  ],
+  "isActive": true
+}
 ```
 
 Notes:
 
-- `slug` нормализуется и делается уникальным; если пустой — генерируется из `title`.
+- `slug` нормализуется и делается уникальным; если пустой — генерируется из `titleI18n.uk`.
 - `variants[*].options` приводится к `string|number`.
 
 Responses:
 
 - 201 Created — созданный продукт
 
-```
-
-{ /_ Product _/ }
-
-````
-
 ```bash
 curl -X POST -H "x-api-key: $ADMIN_API_KEY" -H "Content-Type: application/json" \
-  -d '{"slug":"","title":"Композит","variants":[{"sku":"UC-A2-2G","manufacturerId":"<mid>","price":350}]}' \
+  -d '{
+    "slug":"",
+    "titleI18n":{"uk":"Композит","en":"Composite"},
+    "variants":[{"sku":"UC-A2-2G","manufacturerId":"<mid>","price":350}]
+  }' \
   http://localhost:3000/admin/products
-````
+```
 
 ### Update product
 
@@ -392,21 +363,21 @@ Body (любые поля опциональны):
 
 ```
 {
-  "slug": "new-slug",   // будет нормализован и станет уникальным; если пустой — regen из title
-  "title": "Новое имя",
-  "description": "...",
+  "slug": "new-slug",   // будет нормализован и станет уникальным; если пустой — regen из titleI18n.uk
+  "titleI18n": { "uk": "Нова назва", "en": "New title" },
+  "descriptionI18n": { "uk": "Опис...", "en": "Description..." },
   "categoryIds": ["<catId>"],
   "tags": ["sale"],
   "images": ["https://.../2.jpg"],
   "attributes": [{"key": "purpose", "value": "restoration"}],
-  "variants": [ ... полная замена массива ... ],
+  "variants": [ /* полная замена массива */ ],
   "isActive": true
 }
 ```
 
 ```bash
 curl -X PATCH -H "x-api-key: $ADMIN_API_KEY" -H "Content-Type: application/json" \
-  -d '{"title":"Композит PRO","slug":""}' \
+  -d '{"titleI18n":{"uk":"Композит PRO"},"slug":""}' \
   http://localhost:3000/admin/products/<productId>
 ```
 
@@ -1242,7 +1213,21 @@ Body:
   "endsAt":"2025-09-30T23:59:59.999Z",
   "priority":10,
   "stackable":false,
-  "categoryIds":["<catId>"]
+  "categoryIds":["<catId>"],
+  "productIds":[],
+  "manufacturerIds":[],
+  "countryIds":[],
+  "tags":["sale"],
+  "targetGroups": [
+    {
+      "categoryIds": ["<catId>"],
+      "manufacturerIds": ["<manufacturerId>"],
+      "tags": ["popular"]
+    },
+    {
+      "productIds": ["<productId>"]
+    }
+  ]
 }
 ```
 
@@ -1270,7 +1255,11 @@ PATCH `/admin/discounts/:id/targets`
   "categoryIds": ["<categoryId>"],
   "manufacturerIds": ["<manufacturerId>"],
   "countryIds": ["<countryId>"],
-  "tags": ["consumables", "sale"]
+  "tags": ["consumables", "sale"],
+  "targetGroups": [
+    { "tags": ["sale"], "categoryIds": ["<categoryId>"] },
+    { "productIds": ["<productId>"] }
+  ]
 }
 ```
 
@@ -1389,8 +1378,23 @@ Response `200 OK`: `Discount | null`
   "properties": {
     "_id": { "type": "string" },
     "slug": { "type": "string" },
-    "title": { "type": "string" },
-    "description": { "type": ["string", "null"] },
+    "titleI18n": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "uk": { "type": "string" },
+        "en": { "type": ["string", "null"] }
+      },
+      "required": ["uk"]
+    },
+    "descriptionI18n": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "uk": { "type": ["string", "null"] },
+        "en": { "type": ["string", "null"] }
+      }
+    },
     "categoryIds": {
       "type": "array",
       "items": { "type": "string" },
@@ -1448,7 +1452,7 @@ Response `200 OK`: `Discount | null`
     "createdAt": { "type": ["string", "null"], "format": "date-time" },
     "updatedAt": { "type": ["string", "null"], "format": "date-time" }
   },
-  "required": ["slug", "title", "variants", "isActive"]
+  "required": ["slug", "titleI18n", "variants", "isActive"]
 }
 ```
 
@@ -1535,14 +1539,22 @@ Response `200 OK`: `Discount | null`
   "properties": {
     "_id": { "type": "string" },
     "code": { "type": "string" },
-    "name": { "type": "string" },
+    "nameI18n": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "uk": { "type": "string" },
+        "en": { "type": ["string", "null"] }
+      },
+      "required": ["uk"]
+    },
     "slug": { "type": "string" },
     "flagUrl": { "type": ["string", "null"] },
     "isActive": { "type": "boolean", "default": true },
     "createdAt": { "type": ["string", "null"], "format": "date-time" },
     "updatedAt": { "type": ["string", "null"], "format": "date-time" }
   },
-  "required": ["code", "name", "slug", "isActive"]
+  "required": ["code", "nameI18n", "slug", "isActive"]
 }
 ```
 
@@ -1555,7 +1567,15 @@ Response `200 OK`: `Discount | null`
   "additionalProperties": false,
   "properties": {
     "_id": { "type": "string" },
-    "name": { "type": "string" },
+    "nameI18n": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "uk": { "type": "string" },
+        "en": { "type": ["string", "null"] }
+      },
+      "required": ["uk"]
+    },
     "slug": { "type": "string" },
     "countryIds": {
       "type": "array",
@@ -1565,12 +1585,19 @@ Response `200 OK`: `Discount | null`
     "logoUrl": { "type": ["string", "null"] },
     "bannerUrl": { "type": ["string", "null"] },
     "website": { "type": ["string", "null"] },
-    "description": { "type": ["string", "null"] },
+    "descriptionI18n": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "uk": { "type": ["string", "null"] },
+        "en": { "type": ["string", "null"] }
+      }
+    },
     "isActive": { "type": "boolean", "default": true },
     "createdAt": { "type": ["string", "null"], "format": "date-time" },
     "updatedAt": { "type": ["string", "null"], "format": "date-time" }
   },
-  "required": ["name", "slug", "countryIds", "isActive"]
+  "required": ["nameI18n", "slug", "countryIds", "isActive"]
 }
 ```
 
@@ -1584,14 +1611,29 @@ Response `200 OK`: `Discount | null`
   "properties": {
     "_id": { "type": "string" },
     "slug": { "type": "string" },
-    "name": { "type": "string" },
-    "description": { "type": ["string", "null"] },
+    "nameI18n": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "uk": { "type": "string" },
+        "en": { "type": ["string", "null"] }
+      },
+      "required": ["uk"]
+    },
+    "descriptionI18n": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "uk": { "type": ["string", "null"] },
+        "en": { "type": ["string", "null"] }
+      }
+    },
     "imageUrl": { "type": ["string", "null"] },
     "sort": { "type": ["number", "null"], "default": 0 },
     "isActive": { "type": "boolean", "default": true },
     "createdAt": { "type": ["string", "null"], "format": "date-time" },
     "updatedAt": { "type": ["string", "null"], "format": "date-time" }
   },
-  "required": ["slug", "name", "isActive"]
+  "required": ["slug", "nameI18n", "isActive"]
 }
 ```

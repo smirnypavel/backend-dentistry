@@ -4,11 +4,50 @@ import { ApiBearerAuth, ApiOperation, ApiSecurity, ApiTags } from '@nestjs/swagg
 import { Model, Types } from 'mongoose';
 import { Manufacturer, ManufacturerDocument } from '../catalog/manufacturers/manufacturer.schema';
 import { AdminGuard } from './admin.guard';
-import { IsArray, IsBoolean, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
-import { Transform } from 'class-transformer';
+import {
+  IsArray,
+  IsBoolean,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+  ValidateNested,
+} from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+
+class I18nNameCreateDto {
+  @IsString()
+  uk!: string;
+
+  @IsOptional()
+  @IsString()
+  en?: string;
+}
+
+class I18nNameUpdateDto {
+  @IsOptional()
+  @IsString()
+  uk?: string;
+
+  @IsOptional()
+  @IsString()
+  en?: string;
+}
+
+class I18nDescDto {
+  @IsOptional()
+  @IsString()
+  uk?: string;
+
+  @IsOptional()
+  @IsString()
+  en?: string;
+}
 
 class CreateManufacturerDto {
-  nameI18n!: { uk: string; en?: string };
+  @ValidateNested()
+  @Type(() => I18nNameCreateDto)
+  nameI18n!: I18nNameCreateDto;
 
   @IsString()
   @MinLength(2)
@@ -34,7 +73,9 @@ class CreateManufacturerDto {
   website?: string;
 
   @IsOptional()
-  descriptionI18n?: { uk?: string; en?: string };
+  @ValidateNested()
+  @Type(() => I18nDescDto)
+  descriptionI18n?: I18nDescDto;
 
   @IsOptional()
   @IsBoolean()
@@ -43,7 +84,9 @@ class CreateManufacturerDto {
 
 class UpdateManufacturerDto {
   @IsOptional()
-  nameI18n?: { uk?: string; en?: string };
+  @ValidateNested()
+  @Type(() => I18nNameUpdateDto)
+  nameI18n?: I18nNameUpdateDto;
 
   @IsOptional()
   @IsString()
@@ -70,7 +113,9 @@ class UpdateManufacturerDto {
   website?: string;
 
   @IsOptional()
-  descriptionI18n?: { uk?: string; en?: string };
+  @ValidateNested()
+  @Type(() => I18nDescDto)
+  descriptionI18n?: I18nDescDto;
 
   @IsOptional()
   @IsBoolean()
