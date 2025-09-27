@@ -18,8 +18,11 @@ export class ProductsController {
           {
             _id: '665f1a2b3c4d5e6f7a8b9c0d',
             slug: 'universal-composite',
-            title: 'Композит универсальный',
-            description: 'Универсальный светополимерный композит для пломбирования',
+            titleI18n: { uk: 'Композит универсальный', en: 'Universal composite' },
+            descriptionI18n: {
+              uk: 'Универсальный светополимерный композит для пломбирования',
+              en: 'Universal light-cure composite for fillings',
+            },
             categoryIds: ['665f00000000000000000001'],
             tags: ['popular', 'stock'],
             images: [],
@@ -81,8 +84,11 @@ export class ProductsController {
       example: {
         _id: '665f1a2b3c4d5e6f7a8b9c0d',
         slug: 'universal-composite',
-        title: 'Композит универсальный',
-        description: 'Универсальный светополимерный композит для пломбирования',
+        titleI18n: { uk: 'Композит универсальный', en: 'Universal composite' },
+        descriptionI18n: {
+          uk: 'Универсальный светополимерный композит для пломбирования',
+          en: 'Universal light-cure composite for fillings',
+        },
         categoryIds: ['665f00000000000000000001'],
         tags: ['popular', 'stock'],
         images: [],

@@ -8,11 +8,14 @@ export class Category {
   @Prop({ required: true, trim: true, lowercase: true })
   slug!: string;
 
-  @Prop({ required: true, trim: true })
-  name!: string;
+  @Prop({
+    type: { uk: { type: String, required: true, trim: true }, en: { type: String, trim: true } },
+    required: true,
+  })
+  nameI18n!: { uk: string; en?: string };
 
-  @Prop({ trim: true })
-  description?: string;
+  @Prop({ type: { uk: { type: String, trim: true }, en: { type: String, trim: true } } })
+  descriptionI18n?: { uk?: string; en?: string };
 
   @Prop({ trim: true })
   imageUrl?: string;
@@ -27,3 +30,4 @@ export class Category {
 export const CategorySchema = SchemaFactory.createForClass(Category);
 CategorySchema.index({ slug: 1 }, { unique: true });
 CategorySchema.index({ isActive: 1, sort: 1 });
+CategorySchema.index({ 'nameI18n.uk': 1 });

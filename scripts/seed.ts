@@ -20,8 +20,18 @@ async function run() {
   const count = await CategoryModel.countDocuments();
   if (count === 0) {
     await CategoryModel.insertMany([
-      { slug: 'materials', name: 'Материалы', description: 'Расходные материалы', sort: 1 },
-      { slug: 'tools', name: 'Инструменты', description: 'Инструменты и приспособления', sort: 2 },
+      {
+        slug: 'materials',
+        nameI18n: { uk: 'Матеріали', en: 'Materials' },
+        descriptionI18n: { uk: 'Витратні матеріали', en: 'Consumables' },
+        sort: 1,
+      },
+      {
+        slug: 'tools',
+        nameI18n: { uk: 'Інструменти', en: 'Tools' },
+        descriptionI18n: { uk: 'Інструменти та пристосування', en: 'Tools and accessories' },
+        sort: 2,
+      },
     ]);
     console.log('Seeded categories.');
   } else {
@@ -32,9 +42,9 @@ async function run() {
   const countriesCount = await CountryModel.countDocuments();
   if (countriesCount === 0) {
     await CountryModel.insertMany([
-      { code: 'UA', name: 'Украина', slug: 'ua' },
-      { code: 'PL', name: 'Польша', slug: 'pl' },
-      { code: 'DE', name: 'Германия', slug: 'de' },
+      { code: 'UA', nameI18n: { uk: 'Україна', en: 'Ukraine' }, slug: 'ua' },
+      { code: 'PL', nameI18n: { uk: 'Польща', en: 'Poland' }, slug: 'pl' },
+      { code: 'DE', nameI18n: { uk: 'Німеччина', en: 'Germany' }, slug: 'de' },
     ]);
     console.log('Seeded countries.');
   } else {
@@ -49,9 +59,21 @@ async function run() {
     const de = await CountryModel.findOne({ code: 'DE' }).lean();
 
     await ManufacturerModel.insertMany([
-      { slug: 'dent-ua', name: 'Dent UA', countryIds: [ua?._id].filter(Boolean) },
-      { slug: 'stoma-pl', name: 'Stoma PL', countryIds: [pl?._id].filter(Boolean) },
-      { slug: 'med-de', name: 'Med DE', countryIds: [de?._id].filter(Boolean) },
+      {
+        slug: 'dent-ua',
+        nameI18n: { uk: 'Dent UA', en: 'Dent UA' },
+        countryIds: [ua?._id].filter(Boolean),
+      },
+      {
+        slug: 'stoma-pl',
+        nameI18n: { uk: 'Stoma PL', en: 'Stoma PL' },
+        countryIds: [pl?._id].filter(Boolean),
+      },
+      {
+        slug: 'med-de',
+        nameI18n: { uk: 'Med DE', en: 'Med DE' },
+        countryIds: [de?._id].filter(Boolean),
+      },
     ]);
     console.log('Seeded manufacturers.');
   } else {
@@ -73,8 +95,11 @@ async function run() {
 
     await ProductModel.create({
       slug: 'universal-composite',
-      title: 'Композит универсальный',
-      description: 'Универсальный светополимерный композит для пломбирования',
+      titleI18n: { uk: 'Композит універсальний', en: 'Universal composite' },
+      descriptionI18n: {
+        uk: 'Універсальний світлополімерний композит для пломбування',
+        en: 'Universal light-cure composite for fillings',
+      },
       categoryIds,
       tags: ['popular', 'stock'],
       images: [],

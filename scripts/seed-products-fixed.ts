@@ -35,8 +35,11 @@ async function run() {
 
     await ProductModel.create({
       slug,
-      title,
-      description: `Автогенерированный демо продукт #${i}`,
+      titleI18n: { uk: title, en: `Demo product ${i}` },
+      descriptionI18n: {
+        uk: `Автогенерований демо продукт #${i}`,
+        en: `Auto-generated demo product #${i}`,
+      },
       categoryIds: [categoryId],
       tags: ['demo', i % 2 === 0 ? 'stock' : 'popular'],
       images: [],

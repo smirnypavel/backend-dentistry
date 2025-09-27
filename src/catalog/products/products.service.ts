@@ -58,7 +58,14 @@ export class ProductsService {
     if (qLike && qLike.trim().length > 0) {
       const rx = new RegExp(this.escapeRegex(qLike.trim()), 'i');
       andClauses.push({
-        $or: [{ title: rx }, { slug: rx }, { description: rx }, { 'variants.sku': rx }],
+        $or: [
+          { 'titleI18n.uk': rx },
+          { 'titleI18n.en': rx },
+          { slug: rx },
+          { 'descriptionI18n.uk': rx },
+          { 'descriptionI18n.en': rx },
+          { 'variants.sku': rx },
+        ],
       } as unknown as ProductFilter);
     }
 

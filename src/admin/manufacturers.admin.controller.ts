@@ -8,10 +8,7 @@ import { IsArray, IsBoolean, IsOptional, IsString, MaxLength, MinLength } from '
 import { Transform } from 'class-transformer';
 
 class CreateManufacturerDto {
-  @IsString()
-  @MinLength(2)
-  @MaxLength(200)
-  name!: string;
+  nameI18n!: { uk: string; en?: string };
 
   @IsString()
   @MinLength(2)
@@ -37,8 +34,7 @@ class CreateManufacturerDto {
   website?: string;
 
   @IsOptional()
-  @IsString()
-  description?: string;
+  descriptionI18n?: { uk?: string; en?: string };
 
   @IsOptional()
   @IsBoolean()
@@ -47,10 +43,7 @@ class CreateManufacturerDto {
 
 class UpdateManufacturerDto {
   @IsOptional()
-  @IsString()
-  @MinLength(2)
-  @MaxLength(200)
-  name?: string;
+  nameI18n?: { uk?: string; en?: string };
 
   @IsOptional()
   @IsString()
@@ -77,8 +70,7 @@ class UpdateManufacturerDto {
   website?: string;
 
   @IsOptional()
-  @IsString()
-  description?: string;
+  descriptionI18n?: { uk?: string; en?: string };
 
   @IsOptional()
   @IsBoolean()
@@ -98,7 +90,7 @@ export class AdminManufacturersController {
   @Get()
   @ApiOperation({ summary: 'List manufacturers' })
   findAll() {
-    return this.model.find().sort({ name: 1 }).lean();
+    return this.model.find().sort({ 'nameI18n.uk': 1 }).lean();
   }
 
   @Get(':id')

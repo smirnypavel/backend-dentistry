@@ -16,7 +16,7 @@ export class CountriesController {
         {
           _id: '665f00000000000000002001',
           code: 'UA',
-          name: 'Украина',
+          nameI18n: { uk: 'Україна', en: 'Ukraine' },
           slug: 'ua',
           isActive: true,
           createdAt: '2025-09-10T12:00:00.000Z',
@@ -25,7 +25,7 @@ export class CountriesController {
         {
           _id: '665f00000000000000002002',
           code: 'PL',
-          name: 'Польша',
+          nameI18n: { uk: 'Польща', en: 'Poland' },
           slug: 'pl',
           isActive: true,
           createdAt: '2025-09-10T12:00:00.000Z',

@@ -4,23 +4,58 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  MaxLength,
+  IsObject,
+  ValidateNested,
   Min,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+
+class I18nNameCreateDto {
+  @IsString()
+  @IsNotEmpty()
+  uk!: string;
+
+  @IsOptional()
+  @IsString()
+  en?: string;
+}
+
+class I18nNameUpdateDto {
+  @IsOptional()
+  @IsString()
+  uk?: string;
+
+  @IsOptional()
+  @IsString()
+  en?: string;
+}
+
+class I18nDescDto {
+  @IsOptional()
+  @IsString()
+  uk?: string;
+
+  @IsOptional()
+  @IsString()
+  en?: string;
+}
 
 export class CreateCategoryDto {
   @IsString()
   @IsNotEmpty()
   slug!: string;
 
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(200)
-  name!: string;
+  // i18n
+  @ValidateNested()
+  @Type(() => I18nNameCreateDto)
+  @IsObject()
+  nameI18n!: I18nNameCreateDto;
 
-  @IsString()
   @IsOptional()
-  description?: string;
+  @ValidateNested()
+  @Type(() => I18nDescDto)
+  @IsObject()
+  descriptionI18n?: I18nDescDto;
 
   @IsString()
   @IsOptional()
@@ -41,14 +76,18 @@ export class UpdateCategoryDto {
   @IsOptional()
   slug?: string;
 
-  @IsString()
+  // i18n
   @IsOptional()
-  @MaxLength(200)
-  name?: string;
+  @ValidateNested()
+  @Type(() => I18nNameUpdateDto)
+  @IsObject()
+  nameI18n?: I18nNameUpdateDto;
 
-  @IsString()
   @IsOptional()
-  description?: string;
+  @ValidateNested()
+  @Type(() => I18nDescDto)
+  @IsObject()
+  descriptionI18n?: I18nDescDto;
 
   @IsString()
   @IsOptional()

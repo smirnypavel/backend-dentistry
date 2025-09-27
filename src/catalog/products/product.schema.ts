@@ -43,11 +43,16 @@ export class Product {
   @Prop({ required: true, unique: true, lowercase: true, trim: true })
   slug!: string;
 
-  @Prop({ required: true, trim: true })
-  title!: string;
+  @Prop({
+    type: { uk: { type: String, required: true, trim: true }, en: { type: String, trim: true } },
+    required: true,
+  })
+  titleI18n!: { uk: string; en?: string };
 
-  @Prop({ trim: true })
-  description?: string;
+  @Prop({
+    type: { uk: { type: String, trim: true }, en: { type: String, trim: true } },
+  })
+  descriptionI18n?: { uk?: string; en?: string };
 
   @Prop({ type: [Types.ObjectId], default: [] })
   categoryIds!: Types.ObjectId[];
@@ -85,8 +90,13 @@ export class Product {
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);
-// Text search
-ProductSchema.index({ title: 'text', description: 'text' });
+// Text search across i18n fields
+ProductSchema.index({
+  'titleI18n.uk': 'text',
+  'titleI18n.en': 'text',
+  'descriptionI18n.uk': 'text',
+  'descriptionI18n.en': 'text',
+});
 // Filters
 ProductSchema.index({ categoryIds: 1, isActive: 1 });
 ProductSchema.index({ manufacturerIds: 1 });

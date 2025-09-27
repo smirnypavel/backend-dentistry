@@ -16,8 +16,8 @@ export class CategoriesController {
         {
           _id: '665f00000000000000000001',
           slug: 'materials',
-          name: 'Материалы',
-          description: 'Расходные материалы',
+          nameI18n: { uk: 'Матеріали', en: 'Materials' },
+          descriptionI18n: { uk: 'Витратні матеріали', en: 'Consumables' },
           sort: 1,
           isActive: true,
           createdAt: '2025-09-10T12:00:00.000Z',
@@ -26,8 +26,8 @@ export class CategoriesController {
         {
           _id: '665f00000000000000000002',
           slug: 'tools',
-          name: 'Инструменты',
-          description: 'Инструменты и приспособления',
+          nameI18n: { uk: 'Інструменти', en: 'Tools' },
+          descriptionI18n: { uk: 'Інструменти та пристосування', en: 'Tools and accessories' },
           sort: 2,
           isActive: true,
           createdAt: '2025-09-10T12:00:00.000Z',

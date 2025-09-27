@@ -15,7 +15,7 @@ export class ManufacturersController {
       example: [
         {
           _id: '665f00000000000000001001',
-          name: 'Dent UA',
+          nameI18n: { uk: 'Dent UA', en: 'Dent UA' },
           slug: 'dent-ua',
           countryIds: ['665f00000000000000002001'],
           isActive: true,
@@ -24,7 +24,7 @@ export class ManufacturersController {
         },
         {
           _id: '665f00000000000000001002',
-          name: 'Stoma PL',
+          nameI18n: { uk: 'Stoma PL', en: 'Stoma PL' },
           slug: 'stoma-pl',
           countryIds: ['665f00000000000000002002'],
           isActive: true,

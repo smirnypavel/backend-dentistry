@@ -17,7 +17,7 @@ export class AdminCategoriesController {
   @Get()
   @ApiOperation({ summary: 'List categories' })
   findAll() {
-    return this.model.find().sort({ sort: 1, name: 1 }).lean();
+    return this.model.find().sort({ sort: 1, 'nameI18n.uk': 1 }).lean();
   }
 
   @Get(':id')

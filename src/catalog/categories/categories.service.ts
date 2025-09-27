@@ -8,6 +8,6 @@ export class CategoriesService {
   constructor(@InjectModel(Category.name) private readonly model: Model<CategoryDocument>) {}
 
   async findAllActive(): Promise<Category[]> {
-    return this.model.find({ isActive: true }).sort({ sort: 1, name: 1 }).lean();
+    return this.model.find({ isActive: true }).sort({ sort: 1, 'nameI18n.uk': 1 }).lean();
   }
 }

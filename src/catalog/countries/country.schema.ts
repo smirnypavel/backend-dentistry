@@ -8,8 +8,11 @@ export class Country {
   @Prop({ required: true, trim: true, uppercase: true })
   code!: string; // ISO code, e.g., US, UA, JP
 
-  @Prop({ required: true, trim: true })
-  name!: string;
+  @Prop({
+    type: { uk: { type: String, required: true, trim: true }, en: { type: String, trim: true } },
+    required: true,
+  })
+  nameI18n!: { uk: string; en?: string };
 
   @Prop({ required: true, lowercase: true, trim: true })
   slug!: string;
@@ -24,4 +27,4 @@ export class Country {
 export const CountrySchema = SchemaFactory.createForClass(Country);
 CountrySchema.index({ code: 1 }, { unique: true });
 CountrySchema.index({ slug: 1 }, { unique: true });
-CountrySchema.index({ isActive: 1, name: 1 });
+CountrySchema.index({ isActive: 1, 'nameI18n.uk': 1 });

@@ -2,6 +2,100 @@
 
 Этот документ описывает публичные эндпоинты для фронтенда витрины. Все ответы — `JSON`. API‑ключ не требуется.
 
+Сопутствующие артефакты для фронтенда:
+
+- JSON Schemas (минимальный набор для витрины): `docs/public-schemas.json`
+- TypeScript типы (легковесные): `docs/snippets/public-types.d.ts`
+
+## i18n в витрине (uk/en)
+
+- В ответах приходят локализованные поля в виде объектов `*I18n`:
+  - Товары: `titleI18n`, `descriptionI18n`
+  - Категории: `nameI18n`, `descriptionI18n`
+  - Производители: `nameI18n`, `descriptionI18n`
+  - Страны: `nameI18n`
+- Правило выбора на фронте: сначала `*.I18n[lang]`, если пусто — используйте `*.I18n.uk` (uk всегда заполнен). Пример:
+
+```ts
+function pickI18n(i18n: { uk: string; en?: string } | undefined, lang: 'uk' | 'en'): string {
+  if (!i18n) return '';
+  return (lang === 'en' ? i18n.en : i18n.uk) || i18n.uk || '';
+}
+```
+
+- Поиск/сортировка: сервер сортирует по полям `*.uk` (например, `titleI18n.uk`, `nameI18n.uk`), а `qLike` ищет по `uk/en`.
+- Слаг (`slug`) не локализуется.
+
+### Мини‑примеры UI‑мэппинга (карточка товара)
+
+```ts
+// См. готовые хелперы в docs/snippets/i18n.ts
+type Lang = 'uk' | 'en';
+
+type ProductCard = {
+  href: string;
+  title: string;
+  description: string;
+  image: string;
+  priceFrom?: number;
+  priceTo?: number;
+};
+
+function toProductCard(p: any, lang: Lang): ProductCard {
+  const title = pickI18n(p.titleI18n, lang);
+  const description = pickI18n(p.descriptionI18n, lang);
+  const image = p.images?.[0] ?? '';
+  return {
+    href: `/p/${p.slug}`,
+    title,
+    description,
+    image,
+    priceFrom: p.priceMinFinal,
+    priceTo: p.priceMaxFinal,
+  };
+}
+
+// Пример использования (uk)
+const cardUk = toProductCard(product, 'uk');
+// Пример использования (en)
+const cardEn = toProductCard(product, 'en');
+```
+
+Мини‑мэппинг для категорий, производителей и стран (см. также helpers в `docs/snippets/i18n.ts`):
+
+```ts
+// Category tile
+function toCategoryTile(c: any, lang: 'uk' | 'en') {
+  return {
+    href: `/c/${c.slug}`,
+    title: pickI18n(c.nameI18n, lang),
+    description: pickI18n(c.descriptionI18n, lang),
+    image: c.imageUrl ?? '',
+  };
+}
+
+// Manufacturer tile
+function toManufacturerTile(m: any, lang: 'uk' | 'en') {
+  return {
+    href: `/m/${m.slug}`,
+    title: pickI18n(m.nameI18n, lang),
+    description: pickI18n(m.descriptionI18n, lang),
+    logo: m.logoUrl ?? '',
+    banner: m.bannerUrl ?? '',
+  };
+}
+
+// Country badge
+function toCountryBadge(co: any, lang: 'uk' | 'en') {
+  return {
+    href: `/co/${co.slug}`,
+    code: co.code,
+    name: pickI18n(co.nameI18n, lang),
+    flag: co.flagUrl ?? '',
+  };
+}
+```
+
 ## Идентификация клиента (без регистрации)
 
 - Клиенты не регистрируются. Идентификация происходит по паре `phone` + `clientId`.
@@ -36,8 +130,8 @@ const clientId =
   {
     "_id": "665f00000000000000000001",
     "slug": "materials",
-    "name": "Материалы",
-    "description": "Расходные материалы",
+    "nameI18n": { "uk": "Матеріали", "en": "Materials" },
+    "descriptionI18n": { "uk": "Витратні матеріали", "en": "Consumables" },
     "sort": 1,
     "isActive": true,
     "createdAt": "2025-09-10T12:00:00.000Z",
@@ -57,8 +151,8 @@ const clientId =
   {
     "_id": "665f00000000000000002001",
     "code": "UA",
-    "name": "Украина",
-    "slug": "ua",
+    "nameI18n": { "uk": "Україна", "en": "Ukraine" },
+    "slug": "ukraine",
     "isActive": true,
     "createdAt": "2025-09-10T12:00:00.000Z",
     "updatedAt": "2025-09-10T12:00:00.000Z"
@@ -76,7 +170,8 @@ const clientId =
 [
   {
     "_id": "665f00000000000000001001",
-    "name": "Dent UA",
+    "nameI18n": { "uk": "Dent UA", "en": "Dent UA" },
+    "descriptionI18n": { "uk": null, "en": null },
     "slug": "dent-ua",
     "countryIds": ["665f00000000000000002001"],
     "isActive": true,
@@ -184,8 +279,8 @@ const clientId =
 
 Параметры запроса:
 
-- `q` string (опционально): полнотекстовый поиск по индексу MongoDB (title/description).
-- `qLike` string (опционально): поиск подстрокой без учёта регистра по `title`, `slug`, `description`, `variants.sku`. Удобен для «живого» поиска при вводе.
+- `q` string (опционально): полнотекстовый поиск по индексу MongoDB (i18n поля title/description).
+- `qLike` string (опционально): поиск подстрокой без учёта регистра по `titleI18n.uk/en`, `slug`, `descriptionI18n.uk/en`, `variants.sku`. Удобен для «живого» поиска при вводе.
 - `category` string (ObjectId): фильтр по категории.
 - `manufacturerId` string | string[]: один или несколько производителей.
 - `countryId` string | string[]: одна или несколько стран.
@@ -194,7 +289,7 @@ const clientId =
 - `priceTo` number: товары, у которых минимальная цена вариантов <= значению.
 - `options` JSON‑строка объекта: фильтр по опциям варианта, например `{ "size": "2g", "shade": "A2" }`.
 - `opt.<key>=<value>`: альтернативная форма фильтра по опциям. Повторяйте ключ, чтобы сделать OR по значениям. Пример: `opt.size=2g&opt.size=4g&opt.shade=A2`.
-- `sort` string: поля через запятую, префикс `-` — по убыванию. Примеры: `-createdAt`, `priceMinFinal,-title`.
+- `sort` string: поля через запятую, префикс `-` — по убыванию. Примеры: `-createdAt`, `priceMinFinal,-titleI18n.uk`.
 - `page` number (по умолчанию 1)
 - `limit` number (по умолчанию 20, максимум 50)
 
@@ -216,8 +311,8 @@ const clientId =
     {
       "_id": "665f1a2b3c4d5e6f7a8b9c0d",
       "slug": "universal-composite",
-      "title": "Композит универсальный",
-      "description": "Универсальный светополимерный композит для пломбирования",
+      "titleI18n": { "uk": "Композит універсальний", "en": "Universal composite" },
+      "descriptionI18n": { "uk": "Опис...", "en": "Description..." },
       "categoryIds": ["665f00000000000000000001"],
       "tags": ["popular", "stock"],
       "images": [],
@@ -288,8 +383,8 @@ const clientId =
 {
   "_id": "665f1a2b3c4d5e6f7a8b9c0d",
   "slug": "universal-composite",
-  "title": "Композит универсальный",
-  "description": "Универсальный светополимерный композит для пломбирования",
+  "titleI18n": { "uk": "Композит універсальний", "en": "Universal composite" },
+  "descriptionI18n": { "uk": "Опис...", "en": "Description..." },
   "categoryIds": ["665f00000000000000000001"],
   "tags": ["popular", "stock"],
   "images": [],

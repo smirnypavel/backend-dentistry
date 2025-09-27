@@ -18,16 +18,40 @@ export class UploadsService {
 
   private ensureConfigured() {
     if (this.configured) return;
-    const { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } = process.env as {
+    const env = process.env as {
       CLOUDINARY_CLOUD_NAME?: string;
       CLOUDINARY_API_KEY?: string;
       CLOUDINARY_API_SECRET?: string;
+      CLOUDINARY_URL?: string;
     };
-    // Cloudinary SDK provides its own types; configuration values are strings
+
+    // Support both explicit vars and single CLOUDINARY_URL (cloudinary://<api_key>:<api_secret>@<cloud_name>)
+    let cloudName = env.CLOUDINARY_CLOUD_NAME?.trim();
+    let apiKey = env.CLOUDINARY_API_KEY?.trim();
+    let apiSecret = env.CLOUDINARY_API_SECRET?.trim();
+
+    if ((!cloudName || !apiKey || !apiSecret) && env.CLOUDINARY_URL) {
+      try {
+        const u = new URL(env.CLOUDINARY_URL);
+        // username = api_key, password = api_secret, host = cloud name
+        cloudName = cloudName || u.host;
+        apiKey = apiKey || decodeURIComponent(u.username);
+        apiSecret = apiSecret || decodeURIComponent(u.password);
+      } catch {
+        // ignore parse errors; we'll validate below
+      }
+    }
+
+    if (!cloudName || !apiKey || !apiSecret) {
+      throw new Error(
+        'Cloudinary is not configured. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET (or set CLOUDINARY_URL).',
+      );
+    }
+
     cloudinary.config({
-      cloud_name: CLOUDINARY_CLOUD_NAME,
-      api_key: CLOUDINARY_API_KEY,
-      api_secret: CLOUDINARY_API_SECRET,
+      cloud_name: cloudName,
+      api_key: apiKey,
+      api_secret: apiSecret,
       secure: true,
     });
     this.configured = true;

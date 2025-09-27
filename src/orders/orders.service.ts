@@ -64,7 +64,10 @@ export class OrdersService {
           quantity: i.quantity,
           price: priceFinal,
           priceOriginal: variant.price,
-          title: i.title ?? (product as { title?: string }).title ?? '',
+          title:
+            i.title ??
+            (product as { titleI18n?: { uk?: string; en?: string } }).titleI18n?.uk ??
+            '',
           options: i.options ?? (variant.options as Record<string, string | number>) ?? {},
           manufacturerId: new Types.ObjectId(String(variant.manufacturerId)),
           countryId: variant.countryId ? new Types.ObjectId(String(variant.countryId)) : undefined,

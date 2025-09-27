@@ -14,10 +14,7 @@ class CreateCountryDto {
   @Transform(({ value }) => String(value).trim().toUpperCase())
   code!: string;
 
-  @IsString()
-  @MinLength(2)
-  @MaxLength(100)
-  name!: string;
+  nameI18n!: { uk: string; en?: string };
 
   @IsString()
   @MinLength(2)
@@ -43,10 +40,7 @@ class UpdateCountryDto {
   code?: string;
 
   @IsOptional()
-  @IsString()
-  @MinLength(2)
-  @MaxLength(100)
-  name?: string;
+  nameI18n?: { uk?: string; en?: string };
 
   @IsOptional()
   @IsString()
@@ -75,7 +69,7 @@ export class AdminCountriesController {
   @Get()
   @ApiOperation({ summary: 'List countries' })
   findAll() {
-    return this.model.find().sort({ name: 1 }).lean();
+    return this.model.find().sort({ 'nameI18n.uk': 1 }).lean();
   }
 
   @Get(':id')

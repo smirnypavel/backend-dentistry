@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/public-schemas.json",
+  "components": {
+    "schemas": {
+      "AppliedDiscountInfo": { "$ref": "./schemas.json#/components/schemas/AppliedDiscountInfo" },
+      "ProductVariant": { "$ref": "./schemas.json#/components/schemas/ProductVariant" },
+      "ProductVariantWithDiscounts": {
+        "$ref": "./schemas.json#/components/schemas/ProductVariantWithDiscounts"
+      },
+      "Product": { "$ref": "./schemas.json#/components/schemas/Product" },
+      "ProductWithDiscounts": { "$ref": "./schemas.json#/components/schemas/ProductWithDiscounts" },
+      "Category": { "$ref": "./schemas.json#/components/schemas/Category" },
+      "Manufacturer": { "$ref": "./schemas.json#/components/schemas/Manufacturer" },
+      "Country": { "$ref": "./schemas.json#/components/schemas/Country" },
+      "OrderItemSnapshot": { "$ref": "./schemas.json#/components/schemas/OrderItemSnapshot" },
+      "Order": { "$ref": "./schemas.json#/components/schemas/Order" },
+      "CreateOrderItem": { "$ref": "./schemas.json#/components/schemas/CreateOrderItem" },
+      "CreateOrderRequest": { "$ref": "./schemas.json#/components/schemas/CreateOrderRequest" },
+      "ProductListResponse": { "$ref": "./schemas.json#/components/schemas/ProductListResponse" }
+    }
+  }
+}

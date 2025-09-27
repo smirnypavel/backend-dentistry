@@ -280,19 +280,56 @@ class ProductAttributeDto {
   value!: Mixed;
 }
 
+class I18nTitleCreateDto {
+  @ApiProperty()
+  @IsString()
+  uk!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  en?: string;
+}
+
+class I18nTitleUpdateDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  uk?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  en?: string;
+}
+
+class I18nDescDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  uk?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  en?: string;
+}
+
 class CreateProductDto {
   @ApiProperty()
   @IsString()
   slug!: string;
 
-  @ApiProperty()
-  @IsString()
-  title!: string;
+  @ApiProperty({ type: I18nTitleCreateDto })
+  @ValidateNested()
+  @Type(() => I18nTitleCreateDto)
+  titleI18n!: I18nTitleCreateDto;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: I18nDescDto })
   @IsOptional()
-  @IsString()
-  description?: string;
+  @ValidateNested()
+  @Type(() => I18nDescDto)
+  descriptionI18n?: I18nDescDto;
 
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
@@ -334,15 +371,17 @@ class UpdateProductDto {
   @IsString()
   slug?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: I18nTitleUpdateDto })
   @IsOptional()
-  @IsString()
-  title?: string;
+  @ValidateNested()
+  @Type(() => I18nTitleUpdateDto)
+  titleI18n?: I18nTitleUpdateDto;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: I18nDescDto })
   @IsOptional()
-  @IsString()
-  description?: string;
+  @ValidateNested()
+  @Type(() => I18nDescDto)
+  descriptionI18n?: I18nDescDto;
 
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
@@ -387,9 +426,9 @@ function toObjectId(id?: string): Types.ObjectId | undefined {
 function mapDtoToDoc(dto: CreateProductDto | UpdateProductDto): Partial<Product> {
   const mapped: Partial<Product> = {};
   if ('slug' in dto && dto.slug !== undefined) mapped.slug = dto.slug as never;
-  if ('title' in dto && dto.title !== undefined) mapped.title = dto.title as never;
-  if ('description' in dto && dto.description !== undefined)
-    mapped.description = dto.description as never;
+  if ('titleI18n' in dto && dto.titleI18n !== undefined) mapped.titleI18n = dto.titleI18n as never;
+  if ('descriptionI18n' in dto && dto.descriptionI18n !== undefined)
+    mapped.descriptionI18n = dto.descriptionI18n as never;
   if ('categoryIds' in dto && dto.categoryIds !== undefined)
     mapped.categoryIds = (dto.categoryIds ?? []).map((id) => new Types.ObjectId(id));
   if ('tags' in dto && dto.tags !== undefined) mapped.tags = dto.tags as never;
@@ -433,7 +472,7 @@ class AdminListProductsQueryDto {
 
   @ApiPropertyOptional({
     description:
-      'Case-insensitive substring search (title, slug, description, variants.sku). Useful for live search/autocomplete.',
+      'Case-insensitive substring search (i18n title/description: uk/en, slug, variants.sku). Useful for live search/autocomplete.',
   })
   @IsOptional()
   @IsString()
@@ -470,7 +509,7 @@ class AdminListProductsQueryDto {
   @Type(() => Boolean)
   isActive?: boolean;
 
-  @ApiPropertyOptional({ description: 'Sort expression, e.g. -createdAt,title' })
+  @ApiPropertyOptional({ description: 'Sort expression, e.g. -createdAt,titleI18n.uk' })
   @IsOptional()
   @IsString()
   sort?: string;
@@ -521,7 +560,7 @@ class AdminAutocompleteQueryDto {
 
   @ApiPropertyOptional({
     description:
-      'Case-insensitive substring search (title, slug, description, variants.sku). Recommended for live typeahead.',
+      'Case-insensitive substring search (i18n title/description: uk/en, slug, variants.sku). Recommended for live typeahead.',
   })
   @IsOptional()
   @IsString()
@@ -667,7 +706,7 @@ export class AdminProductsController {
       example: [
         {
           _id: '665f1a2b3c4d5e6f7a8b9c0d',
-          title: 'Композит универсальный',
+          title: 'Композит універсальний',
           slug: 'kompozit-universalnyj',
           priceMin: 350,
           priceMax: 480,
@@ -689,14 +728,22 @@ export class AdminProductsController {
     if (qLike && qLike.trim()) {
       rx = new RegExp(escapeRegex(qLike.trim()), 'i');
       andClauses.push({
-        $or: [{ title: rx }, { slug: rx }, { description: rx }, { 'variants.sku': rx }],
+        $or: [
+          { 'titleI18n.uk': rx },
+          { 'titleI18n.en': rx },
+          { slug: rx },
+          { 'descriptionI18n.uk': rx },
+          { 'descriptionI18n.en': rx },
+          { 'variants.sku': rx },
+        ],
       });
     }
     const finalFilter = andClauses.length ? { $and: [filter, ...andClauses] } : filter;
 
     // Project minimal fields only
     const projection = {
-      title: 1,
+      'titleI18n.uk': 1,
+      'titleI18n.en': 1,
       slug: 1,
       priceMin: 1,
       priceMax: 1,
@@ -705,7 +752,7 @@ export class AdminProductsController {
 
     type AutocompleteLean = {
       _id: Types.ObjectId;
-      title: string;
+      titleI18n?: { uk?: string; en?: string };
       slug: string;
       priceMin: number;
       priceMax: number;
@@ -734,7 +781,7 @@ export class AdminProductsController {
       }
       return {
         _id: p._id,
-        title: p.title,
+        title: p.titleI18n?.uk ?? p.titleI18n?.en ?? '',
         slug: p.slug,
         priceMin: p.priceMin,
         priceMax: p.priceMax,
@@ -755,7 +802,7 @@ export class AdminProductsController {
           {
             _id: '665f1a2b3c4d5e6f7a8b9c0d',
             slug: 'universal-composite',
-            title: 'Композит универсальный',
+            titleI18n: { uk: 'Композит універсальний', en: 'Universal composite' },
             priceMin: 350,
             priceMax: 480,
           },
@@ -775,7 +822,14 @@ export class AdminProductsController {
     if (qLike && qLike.trim()) {
       const rx = new RegExp(escapeRegex(qLike.trim()), 'i');
       andClauses.push({
-        $or: [{ title: rx }, { slug: rx }, { description: rx }, { 'variants.sku': rx }],
+        $or: [
+          { 'titleI18n.uk': rx },
+          { 'titleI18n.en': rx },
+          { slug: rx },
+          { 'descriptionI18n.uk': rx },
+          { 'descriptionI18n.en': rx },
+          { 'variants.sku': rx },
+        ],
       });
     }
     if (query.isActive !== undefined) filter.isActive = !!query.isActive;
@@ -828,8 +882,8 @@ export class AdminProductsController {
       example: {
         _id: '665f1a2b3c4d5e6f7a8b9c0d',
         slug: 'universal-composite',
-        title: 'Композит универсальный',
-        description: 'Описание...',
+        titleI18n: { uk: 'Композит універсальний', en: 'Universal composite' },
+        descriptionI18n: { uk: 'Опис...', en: 'Description...' },
         categoryIds: [],
         tags: ['popular'],
         images: [],
@@ -873,7 +927,7 @@ export class AdminProductsController {
     // Auto-generate slug if missing, ensure uniqueness
     let desiredSlug = (dto.slug ?? '').trim();
     if (!desiredSlug) {
-      desiredSlug = slugify(dto.title ?? '');
+      desiredSlug = slugify(dto.titleI18n?.uk ?? '');
     } else {
       desiredSlug = slugify(desiredSlug);
     }
@@ -894,12 +948,12 @@ export class AdminProductsController {
     const patch = mapDtoToDoc(dto);
     // Update slug if explicitly provided; keep stable otherwise
     if (dto.slug !== undefined) {
-      const desired = slugify((dto.slug ?? '').trim() || doc.title || '');
+      const desired = slugify((dto.slug ?? '').trim() || doc.titleI18n?.uk || '');
       if (desired && desired !== doc.slug) {
         patch.slug = await ensureUniqueSlugExcludingId(this.model, desired, doc._id);
       } else if (!desired) {
         // empty slug provided → regenerate from title
-        const regen = slugify(doc.title || '');
+        const regen = slugify(doc.titleI18n?.uk || '');
         patch.slug = await ensureUniqueSlugExcludingId(this.model, regen, doc._id);
       }
     }
@@ -1300,7 +1354,7 @@ export class AdminProductsController {
     if (!doc) throw new NotFoundException('Product not found');
 
     // Prepare new slug
-    const baseSlug = slugify(doc.slug || doc.title || 'item');
+    const baseSlug = slugify(doc.slug || (doc.titleI18n?.uk ?? '') || 'item');
     const newSlug = await ensureUniqueSlug(this.model, baseSlug);
 
     const skuSuffix = (body?.skuSuffix ?? '').trim();
@@ -1308,8 +1362,15 @@ export class AdminProductsController {
 
     const cloned = new this.model({
       slug: newSlug,
-      title: titlePrefix ? `${titlePrefix} ${doc.title}` : doc.title,
-      description: doc.description,
+      titleI18n: {
+        uk: titlePrefix ? `${titlePrefix} ${doc.titleI18n?.uk ?? ''}` : (doc.titleI18n?.uk ?? ''),
+        ...(doc.titleI18n?.en
+          ? {
+              en: titlePrefix ? `${titlePrefix} ${doc.titleI18n.en}` : doc.titleI18n.en,
+            }
+          : {}),
+      },
+      descriptionI18n: doc.descriptionI18n ? { ...doc.descriptionI18n } : undefined,
       categoryIds: [...(doc.categoryIds ?? [])],
       tags: [...(doc.tags ?? [])],
       images: [...(doc.images ?? [])],

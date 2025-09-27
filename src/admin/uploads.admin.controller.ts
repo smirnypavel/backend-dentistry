@@ -23,7 +23,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { UploadsService } from './uploads.service';
 import type { Express } from 'express';
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 class UploadImageBodyDto {
   @IsOptional()
@@ -59,6 +59,13 @@ class UploadImageResponseDto {
   format?: string;
 }
 
+class DeleteImageDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(300)
+  publicId!: string; // e.g., products/abc
+}
+
 @ApiTags('admin:uploads')
 @ApiSecurity('x-api-key')
 @ApiBearerAuth('bearer')
@@ -92,5 +99,29 @@ export class AdminUploadsController {
     const folder = body?.folder ? String(body.folder).replace(/\/+$/g, '') : undefined;
     const res = await this.uploads.uploadBuffer(buffer, originalname, folder);
     return res; // { url, secure_url, public_id, width, height, format }
+  }
+
+  @Post('image/delete')
+  @ApiOperation({ summary: 'Delete image from Cloudinary by public_id' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { publicId: { type: 'string', example: 'products/abc' } },
+      required: ['publicId'],
+    },
+  })
+  @ApiOkResponse({
+    schema: {
+      type: 'object',
+      properties: {
+        result: { type: 'string', example: 'ok' },
+      },
+      required: ['result'],
+    },
+  })
+  async deleteImage(@Body() dto: DeleteImageDto) {
+    const publicId = String(dto.publicId ?? '').trim();
+    if (!publicId) throw new BadRequestException('publicId is required');
+    return this.uploads.delete(publicId);
   }
 }

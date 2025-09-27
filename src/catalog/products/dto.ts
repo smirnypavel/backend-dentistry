@@ -25,7 +25,7 @@ export class FindProductsQueryDto {
 
   @ApiPropertyOptional({
     description:
-      'Case-insensitive substring search by title/slug/description/sku (live search). Escaped as literal.',
+      'Case-insensitive substring search by i18n title/description (uk/en), slug, or SKU. Escaped as literal.',
   })
   @IsOptional()
   @IsString()
@@ -126,7 +126,7 @@ export class FindProductsQueryDto {
   opt?: Record<string, string[]>;
 
   @ApiPropertyOptional({
-    description: 'Sort expression, e.g. -priceMin,title',
+    description: 'Sort expression, e.g. -priceMin,titleI18n.uk',
     default: '-createdAt',
   })
   @IsOptional()
