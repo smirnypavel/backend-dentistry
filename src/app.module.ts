@@ -12,6 +12,8 @@ import { APP_GUARD } from '@nestjs/core';
 import { AdminModule } from './admin/admin.module';
 import { AdminAuthModule } from './admin-auth/admin-auth.module';
 import { DiscountsModule } from './discounts/discounts.module';
+import { ContactsModule } from './company/contacts/contacts.module';
+import { HeroModule } from './company/hero/hero.module';
 
 @Module({
   imports: [
@@ -51,6 +53,8 @@ import { DiscountsModule } from './discounts/discounts.module';
     AdminModule,
     AdminAuthModule,
     DiscountsModule,
+    ContactsModule,
+    HeroModule,
   ],
   controllers: [HealthController],
   providers: [

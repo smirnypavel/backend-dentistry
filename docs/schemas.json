@@ -846,6 +846,183 @@
           "isActive": { "type": "boolean" }
         },
         "required": ["username", "isActive"]
+      },
+      "ContactCard": {
+        "$id": "#/components/schemas/ContactCard",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "_id": { "type": "string" },
+          "addressI18n": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "uk": { "type": "string" },
+              "en": { "type": "string" }
+            }
+          },
+          "phones": { "type": "array", "items": { "type": "string" }, "default": [] },
+          "email": { "type": ["string", "null"] },
+          "viber": { "type": "array", "items": { "type": "string" }, "default": [] },
+          "telegram": { "type": "array", "items": { "type": "string" }, "default": [] },
+          "sort": { "type": "number", "default": 0 },
+          "isActive": { "type": "boolean", "default": true },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        },
+        "required": ["phones", "sort", "isActive"]
+      },
+      "CreateContactCardRequest": {
+        "$id": "#/components/schemas/CreateContactCardRequest",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "addressI18n": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "uk": { "type": "string" },
+              "en": { "type": "string" }
+            },
+            "required": ["uk"]
+          },
+          "phones": { "type": "array", "items": { "type": "string" } },
+          "email": { "type": "string" },
+          "viber": { "type": "array", "items": { "type": "string" } },
+          "telegram": { "type": "array", "items": { "type": "string" } },
+          "sort": { "type": "number", "minimum": 0 },
+          "isActive": { "type": "boolean" }
+        }
+      },
+      "UpdateContactCardRequest": {
+        "$id": "#/components/schemas/UpdateContactCardRequest",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "addressI18n": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "uk": { "type": "string" },
+              "en": { "type": "string" }
+            }
+          },
+          "phones": { "type": "array", "items": { "type": "string" } },
+          "email": { "type": "string" },
+          "viber": { "type": "array", "items": { "type": "string" } },
+          "telegram": { "type": "array", "items": { "type": "string" } },
+          "sort": { "type": "number", "minimum": 0 },
+          "isActive": { "type": "boolean" }
+        }
+      },
+      "Hero": {
+        "$id": "#/components/schemas/Hero",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "_id": { "type": "string" },
+          "titleI18n": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": { "uk": { "type": "string" }, "en": { "type": "string" } }
+          },
+          "subtitleI18n": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": { "uk": { "type": "string" }, "en": { "type": "string" } }
+          },
+          "imageUrl": { "type": ["string", "null"] },
+          "imageUrlMobile": { "type": ["string", "null"] },
+          "videoUrl": { "type": ["string", "null"] },
+          "cta": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "labelI18n": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": { "uk": { "type": "string" }, "en": { "type": "string" } }
+              },
+              "url": { "type": ["string", "null"] },
+              "external": { "type": "boolean", "default": false }
+            }
+          },
+          "theme": { "type": "string", "enum": ["light", "dark"], "default": "light" },
+          "isActive": { "type": "boolean", "default": false },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        },
+        "required": ["theme", "isActive"]
+      },
+      "CreateHeroRequest": {
+        "$id": "#/components/schemas/CreateHeroRequest",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "titleI18n": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": { "uk": { "type": "string" }, "en": { "type": "string" } }
+          },
+          "subtitleI18n": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": { "uk": { "type": "string" }, "en": { "type": "string" } }
+          },
+          "imageUrl": { "type": "string" },
+          "imageUrlMobile": { "type": "string" },
+          "videoUrl": { "type": "string" },
+          "cta": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "labelI18n": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": { "uk": { "type": "string" }, "en": { "type": "string" } }
+              },
+              "url": { "type": "string" },
+              "external": { "type": "boolean" }
+            }
+          },
+          "theme": { "type": "string", "enum": ["light", "dark"] },
+          "isActive": { "type": "boolean" }
+        }
+      },
+      "UpdateHeroRequest": {
+        "$id": "#/components/schemas/UpdateHeroRequest",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "titleI18n": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": { "uk": { "type": "string" }, "en": { "type": "string" } }
+          },
+          "subtitleI18n": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": { "uk": { "type": "string" }, "en": { "type": "string" } }
+          },
+          "imageUrl": { "type": "string" },
+          "imageUrlMobile": { "type": "string" },
+          "videoUrl": { "type": "string" },
+          "cta": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "labelI18n": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": { "uk": { "type": "string" }, "en": { "type": "string" } }
+              },
+              "url": { "type": "string" },
+              "external": { "type": "boolean" }
+            }
+          },
+          "theme": { "type": "string", "enum": ["light", "dark"] },
+          "isActive": { "type": "boolean" }
+        }
       }
     }
   }

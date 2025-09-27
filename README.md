@@ -36,6 +36,7 @@ Copy `.env.example` to `.env` and adjust as needed:
 - `DB_NAME` – DB name
 - `ADMIN_API_KEY` – admin API key for `x-api-key` guard
 - `CORS_ORIGINS` – comma-separated list of allowed origins
+  - If you deploy frontend/admin to Vercel preview URLs before you have a domain, set `CORS_ALLOW_ALL=true` temporarily to allow all origins.
 
 ## Docker
 

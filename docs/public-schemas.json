@@ -17,7 +17,9 @@
       "Order": { "$ref": "./schemas.json#/components/schemas/Order" },
       "CreateOrderItem": { "$ref": "./schemas.json#/components/schemas/CreateOrderItem" },
       "CreateOrderRequest": { "$ref": "./schemas.json#/components/schemas/CreateOrderRequest" },
-      "ProductListResponse": { "$ref": "./schemas.json#/components/schemas/ProductListResponse" }
+      "ProductListResponse": { "$ref": "./schemas.json#/components/schemas/ProductListResponse" },
+      "ContactCard": { "$ref": "./schemas.json#/components/schemas/ContactCard" },
+      "Hero": { "$ref": "./schemas.json#/components/schemas/Hero" }
     }
   }
 }

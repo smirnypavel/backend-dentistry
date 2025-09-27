@@ -15,14 +15,22 @@ async function bootstrap() {
   app.use(json({ limit: process.env.JSON_BODY_LIMIT || '1mb' }));
   app.use(urlencoded({ limit: process.env.FORM_BODY_LIMIT || '1mb', extended: true }));
 
+  // CORS: allow-all toggle for temporary testing/staging (e.g., Vercel frontends before domains are known)
+  const allowAllCors = ['1', 'true', 'yes', 'on'].includes(
+    (process.env.CORS_ALLOW_ALL || '').toLowerCase(),
+  );
   const corsOrigins = (process.env.CORS_ORIGINS || '')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
-  if (corsOrigins.length > 0) {
+  if (allowAllCors) {
+    // Reflect request origin, effectively allowing all
+    app.enableCors({ origin: true });
+  } else if (corsOrigins.length > 0) {
     app.enableCors({ origin: corsOrigins });
   } else {
-    app.enableCors();
+    // Default to permissive during local dev if nothing configured
+    app.enableCors({ origin: true });
   }
 
   app.useGlobalPipes(

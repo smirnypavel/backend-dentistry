@@ -17,6 +17,10 @@ import { AdminUploadsController } from './uploads.admin.controller';
 import { UploadsService } from './uploads.service';
 import { AdminDiscountsController } from './discounts.admin.controller';
 import { AdminDashboardController } from './dashboard.admin.controller';
+import { ContactCard, ContactCardSchema } from '../company/contacts/contact.schema';
+import { AdminContactsController } from './contacts.admin.controller';
+import { Hero, HeroSchema } from '../company/hero/hero.schema';
+import { AdminHeroController } from './hero.admin.controller';
 
 @Module({
   imports: [
@@ -28,6 +32,8 @@ import { AdminDashboardController } from './dashboard.admin.controller';
       { name: Product.name, schema: ProductSchema },
       { name: Order.name, schema: OrderSchema },
       { name: Discount.name, schema: DiscountSchema },
+      { name: ContactCard.name, schema: ContactCardSchema },
+      { name: Hero.name, schema: HeroSchema },
     ]),
   ],
   controllers: [
@@ -39,6 +45,8 @@ import { AdminDashboardController } from './dashboard.admin.controller';
     AdminUploadsController,
     AdminDiscountsController,
     AdminDashboardController,
+    AdminContactsController,
+    AdminHeroController,
   ],
   providers: [UploadsService, AdminGuard],
 })

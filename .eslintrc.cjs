@@ -20,5 +20,5 @@ module.exports = {
       { checksVoidReturn: { attributes: false } },
     ],
   },
-  ignorePatterns: ['.eslintrc.cjs', 'dist', 'node_modules', 'scripts/**/*'],
+  ignorePatterns: ['.eslintrc.cjs', 'dist', 'node_modules', 'scripts/**/*', 'docs/snippets/**/*'],
 };

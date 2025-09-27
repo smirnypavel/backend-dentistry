@@ -1326,6 +1326,36 @@ Response `200 OK`: `Discount | null`
 
 ---
 
+## Contacts (контакты/адреса)
+
+Base: `/admin/contacts`
+
+Кратко: карточки с адресом (i18n) и наборами контактов (телефоны, email, мессенджеры). Все поля опциональны; порядок показа — через `sort`. Поля `viber` и `telegram` — это массивы строк (как и `phones`).
+
+- GET `/admin/contacts` — список всех карточек (включая неактивные), сортировка по `sort`, затем `createdAt`
+- GET `/admin/contacts/:id` — получить карточку по id
+- POST `/admin/contacts` — создать карточку
+- PATCH `/admin/contacts/:id` — частичное обновление
+- DELETE `/admin/contacts/:id` — удалить карточку
+
+Тело создания (все поля опциональны):
+
+```
+{
+  "addressI18n": { "uk": "м. Київ, вул. Хрещатик, 1", "en": "Kyiv, Khreshchatyk St, 1" },
+  "phones": ["+380501234567", "+380971112233"],
+  "email": "info@example.com",
+  "viber": ["+380501234567", "+380671112233"],
+  "telegram": ["@dentistry_store", "@dent_support"],
+  "sort": 1,
+  "isActive": true
+}
+```
+
+См. подробности и примеры ответов: `docs/company-contacts.md`.
+
+---
+
 # Приложение: Общие схемы типов (JSON Schema)
 
 Ниже указаны точные JSON Schema для основных сущностей админки. Эти схемы соответствуют текущим Mongoose-схемам и формам ответов.
@@ -1637,3 +1667,69 @@ Response `200 OK`: `Discount | null`
   "required": ["slug", "nameI18n", "isActive"]
 }
 ```
+
+---
+
+## Hero (герой главной страницы)
+
+Base: `/admin/hero`
+
+Кратко: управляемый блок «герой» для главной страницы. Можно хранить несколько вариантов (черновики), но активным в витрине может быть только один. При включении одного — остальные автоматически выключаются.
+
+- GET `/admin/hero` — получить последний созданный/обновлённый геро‑блок (для удобного редактирования)
+- GET `/admin/hero/:id` — получить по id
+- POST `/admin/hero` — создать
+- PATCH `/admin/hero/:id` — частично обновить
+- DELETE `/admin/hero/:id` — удалить
+
+Модель (все поля опциональны, кроме служебных):
+
+```
+{
+  _id: string,
+  titleI18n?: { uk?: string; en?: string },
+  subtitleI18n?: { uk?: string; en?: string },
+  imageUrl?: string | null,        // десктоп
+  imageUrlMobile?: string | null,  // мобилка
+  videoUrl?: string | null,        // опционально
+  cta?: {
+    labelI18n?: { uk?: string; en?: string },
+    url?: string | null,
+    external?: boolean             // по умолчанию false
+  },
+  theme: 'light' | 'dark',         // по умолчанию 'light'
+  isActive: boolean,               // по умолчанию false
+  createdAt: string,
+  updatedAt: string
+}
+```
+
+Создание (пример):
+
+```bash
+curl -X POST -H "x-api-key: $ADMIN_API_KEY" -H "content-type: application/json" \
+  -d '{
+    "titleI18n": {"uk": "Стоматология, которой доверяют", "en": "Dentistry you trust"},
+    "subtitleI18n": {"uk": "Здоровье зубов — наша забота"},
+    "imageUrl": "https://res.cloudinary.com/.../hero-desktop.jpg",
+    "imageUrlMobile": "https://res.cloudinary.com/.../hero-mobile.jpg",
+    "cta": {"labelI18n": {"uk": "Перейти в каталог", "en": "Go to catalog"}, "url": "/catalog", "external": false},
+    "theme": "light",
+    "isActive": true
+  }' \
+  http://localhost:3000/admin/hero
+```
+
+Обновление (включить и выключить остальные):
+
+```bash
+curl -X PATCH -H "x-api-key: $ADMIN_API_KEY" -H "content-type: application/json" \
+  -d '{"isActive": true}' \
+  http://localhost:3000/admin/hero/<heroId>
+```
+
+Важно:
+
+- Если `isActive=true` при POST/PATCH — все остальные геро‑документы автоматически получают `isActive=false`.
+- Любые поля опциональны — можно сделать простой текстовый герой, только с картинкой, только с видео, с кнопкой/без кнопки и т. п.
+- Изображения и видео можно загружать через `/admin/uploads/image` и подставлять URL в `imageUrl/imageUrlMobile/videoUrl`.

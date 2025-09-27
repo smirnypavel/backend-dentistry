@@ -1,9 +1,11 @@
+/* eslint-disable */
 // Lightweight public-facing TypeScript types for the storefront
 // Generated manually to align with docs/public-schemas.json
 
 export type Lang = 'uk' | 'en';
 
 export type I18nText = { uk: string; en?: string };
+export type I18nTextLoose = { uk?: string; en?: string };
 
 export interface AppliedDiscountInfo {
   discountId: string;
@@ -158,3 +160,32 @@ export interface ProductListResponse {
 
 // i18n helper
 export declare function pickI18n(i18n: I18nText | undefined, lang: Lang): string;
+
+// Company contacts
+export interface ContactCard {
+  _id?: string;
+  addressI18n?: I18nTextLoose;
+  phones: string[];
+  email?: string | null;
+  viber?: string | null;
+  telegram?: string | null;
+  sort: number;
+  isActive: boolean;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+// Homepage hero
+export interface Hero {
+  _id?: string;
+  titleI18n?: I18nTextLoose;
+  subtitleI18n?: I18nTextLoose;
+  imageUrl?: string | null;
+  imageUrlMobile?: string | null;
+  videoUrl?: string | null;
+  cta?: { labelI18n?: I18nTextLoose; url?: string | null; external?: boolean };
+  theme: 'light' | 'dark';
+  isActive: boolean;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
