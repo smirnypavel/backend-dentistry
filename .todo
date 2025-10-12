@@ -1,0 +1,7 @@
+# TODO
+
+- [x] Bootstrap customers module (schemas, service, module wiring)
+- [x] Implement SMS OTP flow (`CustomerOtp`, rate limiting, SMS sender abstraction)
+- [x] Add customer-facing auth controllers (`/auth/request-code`, `/auth/verify-code`, `/me`, `/me/orders`)
+- [x] Extend orders module with customer linkage (`customerId`, attach guest orders)
+- [x] Update docs and env templates for new auth flow

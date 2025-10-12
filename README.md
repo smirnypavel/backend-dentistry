@@ -29,14 +29,16 @@ API will be available at `http://localhost:3000`.
 
 ## Environment
 
-Copy `.env.example` to `.env` and adjust as needed:
+Copy `.env.example` to `.env` and adjust as needed. Ключевые блоки:
 
-- `PORT` – API port
-- `MONGODB_URI` – Mongo connection string
-- `DB_NAME` – DB name
-- `ADMIN_API_KEY` – admin API key for `x-api-key` guard
-- `CORS_ORIGINS` – comma-separated list of allowed origins
-  - If you deploy frontend/admin to Vercel preview URLs before you have a domain, set `CORS_ALLOW_ALL=true` temporarily to allow all origins.
+- Базовые переменные: `PORT`, `MONGODB_URI`, `DB_NAME`, `ADMIN_API_KEY`, `CORS_ORIGINS`, `CORS_ALLOW_ALL`.
+- Storefront JWT: `CUSTOMER_JWT_SECRET`, `CUSTOMER_JWT_EXPIRES_IN`, `CUSTOMER_JWT_ISSUER`, опционально `CUSTOMER_JWT_AUDIENCE`.
+- Refresh токены (если нужны): `CUSTOMER_REFRESH_SECRET`, `CUSTOMER_REFRESH_EXPIRES_IN`.
+- Нормализация телефонов: `CUSTOMER_PHONE_DEFAULT_COUNTRY` (например, `UA`).
+- OTP и rate limit для SMS: блок `CUSTOMER_OTP_*`.
+- SMS-провайдер: `SMS_PROVIDER` (`console`, `http`, `noop`, `twilio`) и дополнительные `SMS_API_URL`, `SMS_API_KEY`, `SMS_FROM`, `SMS_TIMEOUT_MS`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_API_KEY_SID`, `TWILIO_API_KEY_SECRET`.
+
+Для локальной разработки достаточно оставить `SMS_PROVIDER=console` — коды будут логироваться в консоль.
 
 ## Docker
 

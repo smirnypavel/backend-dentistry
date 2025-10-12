@@ -14,6 +14,7 @@ import { AdminAuthModule } from './admin-auth/admin-auth.module';
 import { DiscountsModule } from './discounts/discounts.module';
 import { ContactsModule } from './company/contacts/contacts.module';
 import { HeroModule } from './company/hero/hero.module';
+import { CustomersModule } from './customers/customers.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { HeroModule } from './company/hero/hero.module';
     DiscountsModule,
     ContactsModule,
     HeroModule,
+    CustomersModule,
   ],
   controllers: [HealthController],
   providers: [

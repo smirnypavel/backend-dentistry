@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
+import { Customer } from '../customers/customer.schema';
 
 export type OrderDocument = HydratedDocument<Order>;
 
@@ -74,6 +75,9 @@ export class Order {
   @Prop({ required: true, trim: true })
   clientId!: string;
 
+  @Prop({ type: Types.ObjectId, ref: Customer.name, index: true })
+  customerId?: Types.ObjectId;
+
   @Prop({ type: [OrderItemSnapshotSchema], default: [] })
   items!: OrderItemSnapshot[];
 
@@ -105,7 +109,9 @@ export class Order {
 
 export const OrderSchema = SchemaFactory.createForClass(Order);
 OrderSchema.index({ phone: 1, clientId: 1, createdAt: -1 });
+OrderSchema.index({ customerId: 1, createdAt: -1 });
 // For dashboard date-range queries
 OrderSchema.index({ createdAt: -1 });
 // Unique idempotency per (clientId + hash) to avoid duplicates
 OrderSchema.index({ clientId: 1, idempotencyKeyHash: 1 }, { unique: true, sparse: true });
+OrderSchema.index({ customerId: 1, idempotencyKeyHash: 1 }, { unique: true, sparse: true });

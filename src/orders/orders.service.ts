@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Order, OrderDocument } from './order.schema';
@@ -9,22 +9,53 @@ import type { ProductVariant } from '../catalog/products/product.schema';
 import { DiscountsService } from '../discounts/discounts.service';
 import crypto from 'crypto';
 
+export interface ListCustomerOrdersParams {
+  page: number;
+  limit: number;
+}
+
+type OrderLean = Order & { _id: Types.ObjectId; createdAt?: Date; updatedAt?: Date };
+
+export interface CustomerOrdersPage {
+  items: OrderLean[];
+  total: number;
+  page: number;
+  limit: number;
+  hasNextPage: boolean;
+}
+
+interface CreateOrderOptions {
+  customerId?: string | Types.ObjectId;
+}
+
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
+
   constructor(
     @InjectModel(Order.name) private readonly model: Model<OrderDocument>,
     @InjectModel2(Product.name) private readonly productModel: Model<ProductDocument>,
     private readonly discounts: DiscountsService,
   ) {}
 
-  async create(dto: CreateOrderDto, idempotencyKey?: string) {
+  async create(dto: CreateOrderDto, idempotencyKey?: string, options?: CreateOrderOptions) {
     // Idempotency: if header is provided, try to find an existing order by (clientId + hash)
     const key = (idempotencyKey ?? '').trim();
-    const idemHash = key ? crypto.createHash('sha256').update(key).digest('hex') : undefined;
+    const clientIdNormalized = dto.clientId.trim();
+    const ownerForHash = options?.customerId ? String(options.customerId) : clientIdNormalized;
+    const idemHash = key
+      ? crypto.createHash('sha256').update(`${ownerForHash}:${key}`).digest('hex')
+      : undefined;
+
+    const customerObjectId = options?.customerId
+      ? new Types.ObjectId(String(options.customerId))
+      : undefined;
+
     if (idemHash) {
-      const existing = await this.model
-        .findOne({ clientId: dto.clientId, idempotencyKeyHash: idemHash })
-        .lean();
+      const existingFilter = customerObjectId
+        ? { customerId: customerObjectId, idempotencyKeyHash: idemHash }
+        : { clientId: clientIdNormalized, idempotencyKeyHash: idemHash };
+      const existing = await this.model.findOne(existingFilter).lean();
       if (existing) return existing;
     }
     // Load products to validate variants and compute prices server-side
@@ -92,7 +123,8 @@ export class OrdersService {
     try {
       const order = await this.model.create({
         phone: dto.phone,
-        clientId: dto.clientId,
+        clientId: clientIdNormalized,
+        customerId: customerObjectId,
         items,
         itemsTotal,
         deliveryFee,
@@ -108,9 +140,10 @@ export class OrdersService {
       // If duplicate key due to race, fetch and return existing
       const anyErr = err as { code?: number } | undefined;
       if (anyErr?.code === 11000 && idemHash) {
-        const existing = await this.model
-          .findOne({ clientId: dto.clientId, idempotencyKeyHash: idemHash })
-          .lean();
+        const conflictFilter = customerObjectId
+          ? { customerId: customerObjectId, idempotencyKeyHash: idemHash }
+          : { clientId: clientIdNormalized, idempotencyKeyHash: idemHash };
+        const existing = await this.model.findOne(conflictFilter).lean();
         if (existing) return existing;
       }
       throw err;
@@ -118,6 +151,60 @@ export class OrdersService {
   }
 
   async history(phone: string, clientId: string) {
-    return this.model.find({ phone, clientId }).sort({ createdAt: -1 }).limit(50).lean();
+    return this.model
+      .find({ phone, clientId: clientId.trim() })
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean();
+  }
+
+  async attachByPhoneAndClientId(
+    customerId: Types.ObjectId | string,
+    phone: string,
+    clientId: string,
+  ): Promise<number> {
+    const normalizedPhone = phone.trim();
+    const normalizedClientId = clientId.trim();
+    const targetCustomerId =
+      customerId instanceof Types.ObjectId ? customerId : new Types.ObjectId(customerId);
+
+    const result = await this.model
+      .updateMany(
+        {
+          phone: normalizedPhone,
+          clientId: normalizedClientId,
+          $or: [{ customerId: { $exists: false } }, { customerId: null }],
+        },
+        { $set: { customerId: targetCustomerId } },
+      )
+      .exec();
+
+    return result.modifiedCount ?? 0;
+  }
+
+  async listCustomerOrders(
+    customerId: Types.ObjectId | string,
+    params: ListCustomerOrdersParams,
+  ): Promise<CustomerOrdersPage> {
+    const page = Math.max(params.page, 1);
+    const limit = Math.min(Math.max(params.limit, 1), 100);
+    const skip = (page - 1) * limit;
+    const targetCustomerId =
+      customerId instanceof Types.ObjectId ? customerId : new Types.ObjectId(customerId);
+
+    const filter = { customerId: targetCustomerId };
+
+    const [items, total] = await Promise.all([
+      this.model.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean().exec(),
+      this.model.countDocuments(filter).exec(),
+    ]);
+
+    return {
+      items,
+      total,
+      page,
+      limit,
+      hasNextPage: skip + items.length < total,
+    };
   }
 }

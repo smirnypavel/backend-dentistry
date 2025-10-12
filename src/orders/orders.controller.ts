@@ -1,13 +1,18 @@
-import { Body, Controller, Get, Post, Query, Headers } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Headers, Req } from '@nestjs/common';
 import { ApiOperation, ApiTags, ApiCreatedResponse, ApiOkResponse, ApiBody } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto, GetHistoryQueryDto } from './dto';
+import { Request } from 'express';
+import { CustomerAuthService } from '../customers/customer-auth.service';
 
 @ApiTags('orders')
 @Controller('orders')
 export class OrdersController {
-  constructor(private readonly service: OrdersService) {}
+  constructor(
+    private readonly service: OrdersService,
+    private readonly customerAuthService: CustomerAuthService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Создать заказ' })
@@ -79,8 +84,13 @@ export class OrdersController {
       },
     },
   })
-  create(@Body() dto: CreateOrderDto, @Headers('x-idempotency-key') idemKey?: string) {
-    return this.service.create(dto, idemKey);
+  async create(
+    @Body() dto: CreateOrderDto,
+    @Headers('x-idempotency-key') idemKey?: string,
+    @Req() request?: Request,
+  ) {
+    const customerId = await this.resolveCustomerId(request?.headers.authorization);
+    return this.service.create(dto, idemKey, { customerId });
   }
 
   @Get('history')
@@ -120,5 +130,19 @@ export class OrdersController {
   })
   history(@Query() query: GetHistoryQueryDto) {
     return this.service.history(query.phone, query.clientId);
+  }
+
+  private async resolveCustomerId(authorization?: string | null): Promise<string | undefined> {
+    if (!authorization) {
+      return undefined;
+    }
+
+    const [type, token] = authorization.split(' ');
+    if (!token || type.toLowerCase() !== 'bearer') {
+      return undefined;
+    }
+
+    const customer = await this.customerAuthService.verifyAccessToken(token);
+    return customer._id.toString();
   }
 }
