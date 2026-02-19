@@ -72,7 +72,8 @@ export class CustomerPasswordService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {
-    this.saltRounds = this.configService.get<number>('CUSTOMER_PASSWORD_SALT_ROUNDS') ?? 10;
+    this.saltRounds =
+      Number(this.configService.get<string>('CUSTOMER_PASSWORD_SALT_ROUNDS')) || 10;
     this.resetTokenExpiresIn =
       this.configService.get<string>('CUSTOMER_RESET_TOKEN_EXPIRES_IN') ?? '1h';
     this.resetUrl =
