@@ -23,6 +23,9 @@ export class Customer {
   @Prop({ type: Object, default: {} })
   metadata?: Record<string, unknown>;
 
+  @Prop({ trim: true })
+  passwordHash?: string;
+
   @Prop()
   lastLoginAt?: Date;
 
@@ -35,4 +38,5 @@ export class Customer {
 
 export const CustomerSchema = SchemaFactory.createForClass(Customer);
 CustomerSchema.index({ phone: 1 }, { unique: true });
+CustomerSchema.index({ email: 1 }, { unique: true, sparse: true });
 CustomerSchema.index({ lastLoginAt: -1 });

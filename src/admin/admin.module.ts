@@ -21,6 +21,8 @@ import { ContactCard, ContactCardSchema } from '../company/contacts/contact.sche
 import { AdminContactsController } from './contacts.admin.controller';
 import { Hero, HeroSchema } from '../company/hero/hero.schema';
 import { AdminHeroController } from './hero.admin.controller';
+import { AdminCustomersController } from './customers.admin.controller';
+import { Customer, CustomerSchema } from '../customers/customer.schema';
 
 @Module({
   imports: [
@@ -34,6 +36,7 @@ import { AdminHeroController } from './hero.admin.controller';
       { name: Discount.name, schema: DiscountSchema },
       { name: ContactCard.name, schema: ContactCardSchema },
       { name: Hero.name, schema: HeroSchema },
+      { name: Customer.name, schema: CustomerSchema },
     ]),
   ],
   controllers: [
@@ -47,6 +50,7 @@ import { AdminHeroController } from './hero.admin.controller';
     AdminDashboardController,
     AdminContactsController,
     AdminHeroController,
+    AdminCustomersController,
   ],
   providers: [UploadsService, AdminGuard],
 })

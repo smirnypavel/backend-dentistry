@@ -275,6 +275,36 @@ export class CustomerAuthService {
     }
   }
 
+  async refreshTokens(refreshToken: string): Promise<CustomerAuthTokens> {
+    if (!this.refreshSecret) {
+      throw new BadRequestException('Refresh tokens не налаштовано');
+    }
+
+    let payload: CustomerJwtPayload;
+    try {
+      const verifyOptions: JwtVerifyOptions = {
+        secret: this.refreshSecret,
+      };
+      if (this.jwtAudience) verifyOptions.audience = this.jwtAudience;
+      if (this.jwtIssuer) verifyOptions.issuer = this.jwtIssuer;
+
+      payload = await this.jwtService.verifyAsync<CustomerJwtPayload>(refreshToken, verifyOptions);
+    } catch {
+      throw new UnauthorizedException('Невірний або прострочений refresh токен');
+    }
+
+    if (!payload?.sub) {
+      throw new UnauthorizedException('Невірний refresh токен');
+    }
+
+    const customer = await this.customersService.findById(payload.sub);
+    if (!customer) {
+      throw new UnauthorizedException('Покупця не знайдено');
+    }
+
+    return this.createAuthTokens(customer, payload.clientId);
+  }
+
   private buildJwtPayload(customer: CustomerDocument, clientId: string): CustomerJwtPayload {
     return {
       sub: customer._id.toString(),

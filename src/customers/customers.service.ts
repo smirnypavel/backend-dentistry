@@ -105,6 +105,44 @@ export class CustomersService {
     }
   }
 
+  async findByEmail(email: string): Promise<CustomerDocument | null> {
+    const normalized = email?.trim()?.toLowerCase();
+    if (!normalized) return null;
+    return this.customerModel.findOne({ email: normalized }).exec();
+  }
+
+  async setPassword(customerId: string | Types.ObjectId, passwordHash: string): Promise<void> {
+    await this.customerModel.updateOne({ _id: customerId }, { $set: { passwordHash } }).exec();
+  }
+
+  async touchLastLogin(customerId: string | Types.ObjectId): Promise<void> {
+    await this.customerModel
+      .updateOne({ _id: customerId }, { $set: { lastLoginAt: new Date() } })
+      .exec();
+  }
+
+  async updateProfile(
+    customerId: string | Types.ObjectId,
+    updates: { name?: string; email?: string },
+  ): Promise<CustomerDocument> {
+    const set: Record<string, unknown> = {};
+    if (updates.name !== undefined) set.name = updates.name;
+    if (updates.email !== undefined) set.email = updates.email.trim().toLowerCase();
+
+    if (Object.keys(set).length === 0) {
+      const customer = await this.findById(customerId);
+      if (!customer) throw new Error('Customer not found');
+      return customer;
+    }
+
+    const customer = await this.customerModel
+      .findByIdAndUpdate(customerId, { $set: set }, { new: true })
+      .exec();
+
+    if (!customer) throw new Error('Customer not found');
+    return customer;
+  }
+
   async markPhoneUnverified(customerId: string | Types.ObjectId): Promise<void> {
     await this.customerModel
       .updateOne(

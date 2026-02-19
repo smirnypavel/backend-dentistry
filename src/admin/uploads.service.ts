@@ -65,7 +65,11 @@ export class UploadsService {
         { folder, resource_type: 'image', public_id: publicId },
         (error: unknown, result?: UploadApiResponse) => {
           if (error) {
-            return reject(error instanceof Error ? error : new Error(String(error)));
+            return reject(
+              error instanceof Error
+                ? error
+                : new Error(typeof error === 'string' ? error : 'Cloudinary upload error'),
+            );
           }
           if (!result) return reject(new Error('Upload failed: empty result'));
           return resolve(result);

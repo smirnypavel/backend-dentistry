@@ -12,10 +12,15 @@ import { NoopSmsSender } from './sms/noop-sms.sender';
 import { HttpSmsSender } from './sms/http-sms.sender';
 import { TwilioSmsSender } from './sms/twilio-sms.sender';
 import { CustomerAuthService } from './customer-auth.service';
+import { CustomerPasswordService } from './customer-password.service';
 import { CustomerAuthGuard } from './guards/customer-auth.guard';
 import { OrdersModule } from '../orders/orders.module';
 import { CustomerAuthController } from './customer-auth.controller';
 import { CustomerProfileController } from './customer-profile.controller';
+import { CustomerPasswordAuthController } from './customer-password-auth.controller';
+import { EMAIL_SENDER } from './email/email.sender';
+import { ConsoleEmailSender } from './email/console-email.sender';
+import { SmtpEmailSender } from './email/smtp-email.sender';
 
 const smsSenderProvider: Provider = {
   provide: SMS_SENDER,
@@ -101,22 +106,45 @@ const customerJwtModule = JwtModule.registerAsync({
   },
 });
 
+const emailSenderProvider: Provider = {
+  provide: EMAIL_SENDER,
+  useFactory: (configService: ConfigService) => {
+    const provider = configService.get<string>('EMAIL_PROVIDER')?.toLowerCase() ?? 'console';
+    if (provider === 'smtp') {
+      return new SmtpEmailSender({
+        host: configService.get<string>('SMTP_HOST') ?? 'smtp.gmail.com',
+        port: configService.get<number>('SMTP_PORT') ?? 587,
+        secure: configService.get<string>('SMTP_SECURE') === 'true',
+        user: configService.get<string>('SMTP_USER') ?? '',
+        pass: configService.get<string>('SMTP_PASS') ?? '',
+        from: configService.get<string>('SMTP_FROM') ?? '',
+      });
+    }
+    return new ConsoleEmailSender();
+  },
+  inject: [ConfigService],
+};
+
 @Module({
   imports: [ConfigModule, customerModels, customerJwtModule, forwardRef(() => OrdersModule)],
-  controllers: [CustomerAuthController, CustomerProfileController],
+  controllers: [CustomerAuthController, CustomerProfileController, CustomerPasswordAuthController],
   providers: [
     CustomersService,
     CustomerAuthService,
+    CustomerPasswordService,
     CustomerAuthGuard,
     ThrottlerStorageService,
     smsSenderProvider,
+    emailSenderProvider,
   ],
   exports: [
     CustomersService,
     CustomerAuthService,
+    CustomerPasswordService,
     customerModels,
     customerJwtModule,
     smsSenderProvider,
+    emailSenderProvider,
   ],
 })
 export class CustomersModule {}

@@ -16,9 +16,8 @@ import { IsIn, IsNumber, IsOptional, IsString } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 
 function normalizePhone(input: unknown): string {
-  const s = String(input ?? '')
-    .replace(/\s|\(|\)|-/g, '')
-    .replace(/^00/, '+');
+  const raw = typeof input === 'string' ? input : '';
+  const s = raw.replace(/\s|\(|\)|-/g, '').replace(/^00/, '+');
   if (s.startsWith('+')) return s;
   const digits = s.replace(/[^0-9]/g, '');
   return digits ? `+${digits}` : '';

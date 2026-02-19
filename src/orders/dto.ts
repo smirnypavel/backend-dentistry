@@ -15,9 +15,8 @@ import {
 import { Type } from 'class-transformer';
 
 function normalizePhone(input: unknown): string {
-  const s = String(input ?? '')
-    .replace(/[\s()-]/g, '')
-    .replace(/^00/, '+');
+  const raw = typeof input === 'string' ? input : '';
+  const s = raw.replace(/[\s()-]/g, '').replace(/^00/, '+');
   if (s.startsWith('+')) return s;
   // naive E.164 fallback: assume local without +, keep digits only
   const digits = s.replace(/[^0-9]/g, '');
