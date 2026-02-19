@@ -61,6 +61,9 @@ export class OrderItemSnapshot {
   @Prop({ trim: true })
   unit?: string;
 
+  @Prop({ trim: true })
+  image?: string;
+
   @Prop({ type: [AppliedDiscountSnapshotSchema], default: [] })
   discountsApplied?: AppliedDiscountSnapshot[];
 }

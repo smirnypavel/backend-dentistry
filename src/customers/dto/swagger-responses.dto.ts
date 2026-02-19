@@ -64,6 +64,7 @@ class OrderItemSnapshotDto {
   @ApiPropertyOptional({ example: '665f00000000000000000001' }) manufacturerId?: string;
   @ApiPropertyOptional({ example: '665f00000000000000000002' }) countryId?: string;
   @ApiPropertyOptional({ example: 'шт' }) unit?: string;
+  @ApiPropertyOptional({ example: 'https://example.com/img.jpg', description: 'Product image URL snapshot' }) image?: string;
   @ApiPropertyOptional({ type: [AppliedDiscountSnapshotDto] }) discountsApplied?: AppliedDiscountSnapshotDto[];
 }
 

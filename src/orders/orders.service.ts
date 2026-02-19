@@ -103,6 +103,10 @@ export class OrdersService {
           manufacturerId: new Types.ObjectId(String(variant.manufacturerId)),
           countryId: variant.countryId ? new Types.ObjectId(String(variant.countryId)) : undefined,
           unit: i.unit ?? variant.unit,
+          image:
+            (variant.images && variant.images.length > 0 ? variant.images[0] : null) ||
+            (product.images && product.images.length > 0 ? product.images[0] : null) ||
+            undefined,
           discountsApplied: applied.map((a) => ({
             discountId: a.discountId,
             name: a.name,
@@ -199,12 +203,55 @@ export class OrdersService {
       this.model.countDocuments(filter).exec(),
     ]);
 
+    // Enrich legacy order items that have no image snapshot
+    const enrichedItems = await this.enrichItemImages(items as OrderLean[]);
+
     return {
-      items,
+      items: enrichedItems,
       total,
       page,
       limit,
       hasNextPage: skip + items.length < total,
     };
+  }
+
+  /**
+   * For orders that were placed before the `image` snapshot field was added,
+   * look up the current product and fill in the first available image.
+   */
+  private async enrichItemImages(orders: OrderLean[]): Promise<OrderLean[]> {
+    // Collect product IDs where at least one item is missing an image
+    const missingProductIds = new Set<string>();
+    for (const order of orders) {
+      for (const item of order.items ?? []) {
+        if (!item.image && item.productId) {
+          missingProductIds.add(String(item.productId));
+        }
+      }
+    }
+    if (missingProductIds.size === 0) return orders;
+
+    const products = await this.productModel
+      .find({ _id: { $in: Array.from(missingProductIds).map((id) => new Types.ObjectId(id)) } })
+      .lean();
+    const productMap = new Map<string, (typeof products)[number]>();
+    for (const p of products) productMap.set(String(p._id), p);
+
+    return orders.map((order) => ({
+      ...order,
+      items: (order.items ?? []).map((item) => {
+        if (item.image) return item;
+        const product = productMap.get(String(item.productId));
+        if (!product) return item;
+        const variant = (product.variants || []).find(
+          (v: ProductVariant) => v.sku === item.sku,
+        );
+        const image =
+          (variant?.images?.length ? variant.images[0] : null) ||
+          (product.images?.length ? product.images[0] : null) ||
+          undefined;
+        return image ? { ...item, image } : item;
+      }),
+    }));
   }
 }
