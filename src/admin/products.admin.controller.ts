@@ -26,6 +26,8 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 import { HydratedDocument, Model, Types } from 'mongoose';
 import { Product, ProductDocument, ProductVariant } from '../catalog/products/product.schema';
 import { AdminGuard } from './admin.guard';
+import { DiscountsService } from '../discounts/discounts.service';
+import { DiscountContext } from '../discounts/discount.schema';
 import { Type, Transform } from 'class-transformer';
 import {
   IsArray,
@@ -696,7 +698,10 @@ async function ensureUniqueSlugExcludingId(
   UpdateVariantDto,
 )
 export class AdminProductsController {
-  constructor(@InjectModel(Product.name) private readonly model: Model<ProductDocument>) {}
+  constructor(
+    @InjectModel(Product.name) private readonly model: Model<ProductDocument>,
+    private readonly discountsService: DiscountsService,
+  ) {}
 
   @Get('autocomplete')
   @ApiOperation({ summary: 'Autocomplete products (minimal fields for typeahead)' })
@@ -862,7 +867,7 @@ export class AdminProductsController {
     }
 
     const finalFilter = andClauses.length ? { $and: [filter, ...andClauses] } : filter;
-    const [items, total] = await Promise.all([
+    const [rawItems, total] = await Promise.all([
       this.model
         .find(finalFilter)
         .sort(sortSpec)
@@ -871,7 +876,44 @@ export class AdminProductsController {
         .lean(),
       this.model.countDocuments(finalFilter),
     ]);
+    const items = await this.enrichWithDiscounts(rawItems);
     return { items, page, limit, total };
+  }
+
+  /** Compute priceMinFinal / priceMaxFinal for each product using active discounts */
+  private async enrichWithDiscounts(products: Array<Record<string, unknown>>) {
+    return Promise.all(
+      products.map(async (p) => {
+        const variants = (p.variants ?? []) as ProductVariant[];
+        const tags: string[] = Array.isArray(p.tags) ? (p.tags as string[]) : [];
+        const categoryIds = (p.categoryIds ?? []) as Types.ObjectId[];
+
+        const prices = await Promise.all(
+          variants
+            .filter((v) => v.isActive !== false)
+            .map(async (v) => {
+              const ctx: DiscountContext = {
+                price: v.price,
+                productId: p._id as Types.ObjectId,
+                categoryIds,
+                manufacturerId: v.manufacturerId,
+                countryId: v.countryId,
+                tags,
+              };
+              const { priceFinal } = await this.discountsService.computePrice(ctx);
+              return priceFinal;
+            }),
+        );
+
+        const priceMinFinal = prices.length ? Math.min(...prices) : 0;
+        const priceMaxFinal = prices.length ? Math.max(...prices) : 0;
+        const hasDiscount =
+          priceMinFinal < ((p.priceMin as number) ?? 0) ||
+          priceMaxFinal < ((p.priceMax as number) ?? 0);
+
+        return { ...p, priceMinFinal, priceMaxFinal, hasDiscount };
+      }),
+    );
   }
 
   @Get(':id')

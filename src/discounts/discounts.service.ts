@@ -65,11 +65,19 @@ export class DiscountsService {
 
     // Final filter matches when either there are no groups (so legacy fields apply),
     // OR at least one group matches the ctx
+    // Note: targetGroups may be undefined/null for legacy documents, so we also check $exists:false
+    const noGroups = {
+      $or: [
+        { targetGroups: { $exists: false } },
+        { targetGroups: null },
+        { targetGroups: { $size: 0 } },
+      ],
+    };
     const final: FilterQuery<DiscountDocument> = {
       ...filter,
       $and: [
         ...(filter.$and || []),
-        { $or: [{ targetGroups: { $size: 0 } }, { targetGroups: { $elemMatch: groupElemMatch } }] },
+        { $or: [noGroups, { targetGroups: { $elemMatch: groupElemMatch } }] },
         // legacy top-level fields still respected to further restrict
         { $or: [{ productIds: ctx.productId }, { productIds: { $size: 0 } }] },
         ctx.categoryIds?.length

@@ -23,10 +23,12 @@ import { Hero, HeroSchema } from '../company/hero/hero.schema';
 import { AdminHeroController } from './hero.admin.controller';
 import { AdminCustomersController } from './customers.admin.controller';
 import { Customer, CustomerSchema } from '../customers/customer.schema';
+import { DiscountsModule } from '../discounts/discounts.module';
 
 @Module({
   imports: [
     AdminAuthModule,
+    DiscountsModule,
     MongooseModule.forFeature([
       { name: Country.name, schema: CountrySchema },
       { name: Manufacturer.name, schema: ManufacturerSchema },
