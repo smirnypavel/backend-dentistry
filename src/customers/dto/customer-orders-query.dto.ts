@@ -1,3 +1,4 @@
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsInt, Max, Min } from 'class-validator';
 
@@ -11,11 +12,13 @@ const toNumber = (value: unknown): number | undefined => {
 };
 
 export class CustomerOrdersQueryDto {
+  @ApiPropertyOptional({ default: 1, minimum: 1 })
   @Transform(({ value }) => toNumber(value) ?? 1)
   @IsInt()
   @Min(1)
   page = 1;
 
+  @ApiPropertyOptional({ default: 20, minimum: 1, maximum: 100 })
   @Transform(({ value }) => toNumber(value) ?? 20)
   @IsInt()
   @Min(1)
