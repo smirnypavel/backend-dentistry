@@ -339,6 +339,12 @@ class CreateProductDto {
   @IsString({ each: true })
   categoryIds?: string[];
 
+  @ApiPropertyOptional({ type: [String], description: 'Subcategory ObjectIds' })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  subcategoryIds?: string[];
+
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   @IsArray()
@@ -391,6 +397,12 @@ class UpdateProductDto {
   @IsString({ each: true })
   categoryIds?: string[];
 
+  @ApiPropertyOptional({ type: [String], description: 'Subcategory ObjectIds' })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  subcategoryIds?: string[];
+
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   @IsArray()
@@ -433,6 +445,8 @@ function mapDtoToDoc(dto: CreateProductDto | UpdateProductDto): Partial<Product>
     mapped.descriptionI18n = dto.descriptionI18n as never;
   if ('categoryIds' in dto && dto.categoryIds !== undefined)
     mapped.categoryIds = (dto.categoryIds ?? []).map((id) => new Types.ObjectId(id));
+  if ('subcategoryIds' in dto && dto.subcategoryIds !== undefined)
+    mapped.subcategoryIds = (dto.subcategoryIds ?? []).map((id) => new Types.ObjectId(id));
   if ('tags' in dto && dto.tags !== undefined) mapped.tags = dto.tags as never;
   if ('images' in dto && dto.images !== undefined) mapped.images = dto.images as never;
   if ('attributes' in dto && dto.attributes !== undefined)
@@ -484,6 +498,11 @@ class AdminListProductsQueryDto {
   @IsOptional()
   @IsString()
   category?: string;
+
+  @ApiPropertyOptional({ description: 'Subcategory ID (ObjectId)' })
+  @IsOptional()
+  @IsString()
+  subcategory?: string;
 
   @ApiPropertyOptional({ type: [String], description: 'Manufacturer ID(s)' })
   @IsOptional()
@@ -839,6 +858,7 @@ export class AdminProductsController {
     }
     if (query.isActive !== undefined) filter.isActive = !!query.isActive;
     if (query.category) filter.categoryIds = new Types.ObjectId(query.category);
+    if (query.subcategory) filter.subcategoryIds = new Types.ObjectId(query.subcategory);
     if (query.manufacturerId?.length)
       filter.manufacturerIds = { $in: query.manufacturerId.map((id) => new Types.ObjectId(id)) };
     if (query.countryId?.length)

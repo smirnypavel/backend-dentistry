@@ -9,6 +9,7 @@ export interface ProductQuery {
   q?: string;
   qLike?: string;
   category?: string;
+  subcategory?: string;
   manufacturerId?: string | string[];
   countryId?: string | string[];
   priceFrom?: number;
@@ -32,6 +33,7 @@ export class ProductsService {
       q,
       qLike,
       category,
+      subcategory,
       manufacturerId,
       countryId,
       priceFrom,
@@ -72,6 +74,11 @@ export class ProductsService {
     if (category) {
       const catId = this.toObjectIdOrNull(category);
       if (catId) filter.categoryIds = catId;
+    }
+
+    if (subcategory) {
+      const subId = this.toObjectIdOrNull(subcategory);
+      if (subId) filter.subcategoryIds = subId;
     }
 
     const toArray = (v?: string | string[]) => (Array.isArray(v) ? v : v ? [v] : []);

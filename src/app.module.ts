@@ -6,6 +6,7 @@ import { CategoriesModule } from './catalog/categories/categories.module';
 import { CountriesModule } from './catalog/countries/countries.module';
 import { ManufacturersModule } from './catalog/manufacturers/manufacturers.module';
 import { ProductsModule } from './catalog/products/products.module';
+import { SubcategoriesModule } from './catalog/subcategories/subcategories.module';
 import { OrdersModule } from './orders/orders.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
@@ -50,6 +51,7 @@ import { CustomersModule } from './customers/customers.module';
     CountriesModule,
     ManufacturersModule,
     ProductsModule,
+    SubcategoriesModule,
     OrdersModule,
     AdminModule,
     AdminAuthModule,

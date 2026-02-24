@@ -57,6 +57,9 @@ export class Product {
   @Prop({ type: [Types.ObjectId], default: [] })
   categoryIds!: Types.ObjectId[];
 
+  @Prop({ type: [Types.ObjectId], default: [] })
+  subcategoryIds!: Types.ObjectId[];
+
   @Prop({ type: [String], default: [] })
   tags?: string[];
 
@@ -99,6 +102,7 @@ ProductSchema.index({
 });
 // Filters
 ProductSchema.index({ categoryIds: 1, isActive: 1 });
+ProductSchema.index({ subcategoryIds: 1, isActive: 1 });
 ProductSchema.index({ manufacturerIds: 1 });
 ProductSchema.index({ countryIds: 1 });
 ProductSchema.index({ priceMin: 1, priceMax: 1 });

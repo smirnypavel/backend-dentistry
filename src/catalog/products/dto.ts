@@ -36,6 +36,11 @@ export class FindProductsQueryDto {
   @IsString()
   category?: string;
 
+  @ApiPropertyOptional({ description: 'Subcategory ID (ObjectId)' })
+  @IsOptional()
+  @IsString()
+  subcategory?: string;
+
   @ApiPropertyOptional({ type: [String], description: 'Manufacturer ID(s)' })
   @IsOptional()
   @Transform(({ value }: TransformFnParams) =>
