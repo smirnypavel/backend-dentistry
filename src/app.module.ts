@@ -13,6 +13,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AdminModule } from './admin/admin.module';
 import { AdminAuthModule } from './admin-auth/admin-auth.module';
 import { DiscountsModule } from './discounts/discounts.module';
+import { PromoCodesModule } from './promo-codes/promo-codes.module';
 import { ContactsModule } from './company/contacts/contacts.module';
 import { HeroModule } from './company/hero/hero.module';
 import { CustomersModule } from './customers/customers.module';
@@ -56,6 +57,7 @@ import { CustomersModule } from './customers/customers.module';
     AdminModule,
     AdminAuthModule,
     DiscountsModule,
+    PromoCodesModule,
     ContactsModule,
     HeroModule,
     CustomersModule,

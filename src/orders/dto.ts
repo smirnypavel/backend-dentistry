@@ -103,6 +103,12 @@ export class CreateOrderDto {
   @IsString()
   @MaxLength(500)
   comment?: string;
+
+  @ApiPropertyOptional({ description: 'Promo code to apply' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  promoCode?: string;
 }
 
 export class GetHistoryQueryDto {

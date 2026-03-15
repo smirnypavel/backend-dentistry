@@ -5,6 +5,7 @@ import { OrdersService } from './orders.service';
 import { OrdersController } from './orders.controller';
 import { ProductsModule } from '../catalog/products/products.module';
 import { DiscountsModule } from '../discounts/discounts.module';
+import { PromoCodesModule } from '../promo-codes/promo-codes.module';
 import { Product, ProductSchema } from '../catalog/products/product.schema';
 import { CustomersModule } from '../customers/customers.module';
 
@@ -16,6 +17,7 @@ import { CustomersModule } from '../customers/customers.module';
     ]),
     ProductsModule,
     DiscountsModule,
+    PromoCodesModule,
     forwardRef(() => CustomersModule),
   ],
   controllers: [OrdersController],

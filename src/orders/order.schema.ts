@@ -66,6 +66,9 @@ export class OrderItemSnapshot {
 
   @Prop({ type: [AppliedDiscountSnapshotSchema], default: [] })
   discountsApplied?: AppliedDiscountSnapshot[];
+
+  @Prop({ type: Number, default: 0 })
+  promoDiscount?: number; // promo code discount amount for this item
 }
 
 const OrderItemSnapshotSchema = SchemaFactory.createForClass(OrderItemSnapshot);
@@ -102,6 +105,16 @@ export class Order {
   @Prop({ trim: true })
   comment?: string;
 
+  // Promo code support
+  @Prop({ trim: true, uppercase: true })
+  promoCode?: string;
+
+  @Prop({ trim: true })
+  promoCodeName?: string;
+
+  @Prop({ type: Number, default: 0 })
+  promoCodeDiscount?: number; // total promo discount across all items
+
   // Idempotency support
   @Prop({ trim: true })
   idempotencyKey?: string;
@@ -118,3 +131,4 @@ OrderSchema.index({ createdAt: -1 });
 // Unique idempotency per (clientId + hash) to avoid duplicates
 OrderSchema.index({ clientId: 1, idempotencyKeyHash: 1 }, { unique: true, sparse: true });
 OrderSchema.index({ customerId: 1, idempotencyKeyHash: 1 }, { unique: true, sparse: true });
+OrderSchema.index({ promoCode: 1, createdAt: -1 }, { sparse: true });

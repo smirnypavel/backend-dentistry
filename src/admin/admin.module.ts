@@ -22,6 +22,8 @@ import { AdminContactsController } from './contacts.admin.controller';
 import { Hero, HeroSchema } from '../company/hero/hero.schema';
 import { Subcategory, SubcategorySchema } from '../catalog/subcategories/subcategory.schema';
 import { AdminSubcategoriesController } from './subcategories.admin.controller';
+import { PromoCode, PromoCodeSchema } from '../promo-codes/promo-code.schema';
+import { AdminPromoCodesController } from './promo-codes.admin.controller';
 import { AdminHeroController } from './hero.admin.controller';
 import { AdminCustomersController } from './customers.admin.controller';
 import { Customer, CustomerSchema } from '../customers/customer.schema';
@@ -42,6 +44,7 @@ import { DiscountsModule } from '../discounts/discounts.module';
       { name: Hero.name, schema: HeroSchema },
       { name: Customer.name, schema: CustomerSchema },
       { name: Subcategory.name, schema: SubcategorySchema },
+      { name: PromoCode.name, schema: PromoCodeSchema },
     ]),
   ],
   controllers: [
@@ -57,6 +60,7 @@ import { DiscountsModule } from '../discounts/discounts.module';
     AdminHeroController,
     AdminCustomersController,
     AdminSubcategoriesController,
+    AdminPromoCodesController,
   ],
   providers: [UploadsService, AdminGuard],
 })

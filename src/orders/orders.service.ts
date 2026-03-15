@@ -7,6 +7,7 @@ import { InjectModel as InjectModel2 } from '@nestjs/mongoose';
 import { Product, ProductDocument } from '../catalog/products/product.schema';
 import type { ProductVariant } from '../catalog/products/product.schema';
 import { DiscountsService } from '../discounts/discounts.service';
+import { PromoCodesService } from '../promo-codes/promo-codes.service';
 import crypto from 'crypto';
 
 export interface ListCustomerOrdersParams {
@@ -36,6 +37,7 @@ export class OrdersService {
     @InjectModel(Order.name) private readonly model: Model<OrderDocument>,
     @InjectModel2(Product.name) private readonly productModel: Model<ProductDocument>,
     private readonly discounts: DiscountsService,
+    private readonly promoCodes: PromoCodesService,
   ) {}
 
   async create(dto: CreateOrderDto, idempotencyKey?: string, options?: CreateOrderOptions) {
@@ -115,6 +117,7 @@ export class OrdersService {
             priceBefore: a.priceBefore,
             priceAfter: a.priceAfter,
           })),
+          promoDiscount: 0 as number,
         };
       }),
     );
@@ -123,6 +126,46 @@ export class OrdersService {
     const deliveryFee = dto.deliveryFee ?? 0;
     const total = itemsTotal + deliveryFee;
 
+    // Apply promo code if provided
+    let promoCode: string | undefined;
+    let promoCodeName: string | undefined;
+    let promoCodeDiscount = 0;
+
+    if (dto.promoCode) {
+      const promo = await this.promoCodes.validate(dto.promoCode);
+      const promoItems = items.map((it) => ({
+        productId: it.productId,
+        categoryIds:
+          productMap
+            .get(String(it.productId))
+            ?.categoryIds?.map((id) => new Types.ObjectId(String(id))) || [],
+        priceFinal: it.price,
+      }));
+      const promoResults = this.promoCodes.applyToItems(promo, promoItems);
+
+      // Update item prices with promo discount
+      for (let idx = 0; idx < items.length; idx++) {
+        const pr = promoResults[idx];
+        if (pr.promoDiscount > 0) {
+          items[idx].promoDiscount = pr.promoDiscount;
+          items[idx].price = pr.priceAfterPromo;
+        }
+      }
+
+      promoCodeDiscount = promoResults.reduce(
+        (sum, pr) => sum + pr.promoDiscount * items[promoResults.indexOf(pr)].quantity,
+        0,
+      );
+      promoCodeDiscount = Number(promoCodeDiscount.toFixed(2));
+      promoCode = promo.code;
+      promoCodeName = promo.name;
+
+      await this.promoCodes.incrementUsage(promo._id);
+    }
+
+    const finalItemsTotal = items.reduce((sum, it) => sum + it.price * it.quantity, 0);
+    const finalTotal = finalItemsTotal + deliveryFee;
+
     // Create the order; use unique index on (clientId, idempotencyKeyHash) to avoid races
     try {
       const order = await this.model.create({
@@ -130,12 +173,15 @@ export class OrdersService {
         clientId: clientIdNormalized,
         customerId: customerObjectId,
         items,
-        itemsTotal,
+        itemsTotal: finalItemsTotal,
         deliveryFee,
-        total,
+        total: finalTotal,
         status: 'new',
         name: dto.name,
         comment: dto.comment,
+        promoCode,
+        promoCodeName,
+        promoCodeDiscount: promoCodeDiscount || undefined,
         idempotencyKey: key || undefined,
         idempotencyKeyHash: idemHash,
       });
@@ -243,9 +289,7 @@ export class OrdersService {
         if (item.image) return item;
         const product = productMap.get(String(item.productId));
         if (!product) return item;
-        const variant = (product.variants || []).find(
-          (v: ProductVariant) => v.sku === item.sku,
-        );
+        const variant = (product.variants || []).find((v: ProductVariant) => v.sku === item.sku);
         const image =
           (variant?.images?.length ? variant.images[0] : null) ||
           (product.images?.length ? product.images[0] : null) ||
