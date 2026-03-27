@@ -20,11 +20,13 @@ import { AdminDashboardController } from './dashboard.admin.controller';
 import { ContactCard, ContactCardSchema } from '../company/contacts/contact.schema';
 import { AdminContactsController } from './contacts.admin.controller';
 import { Hero, HeroSchema } from '../company/hero/hero.schema';
+import { GalleryImage, GalleryImageSchema } from '../company/gallery/gallery-image.schema';
 import { Subcategory, SubcategorySchema } from '../catalog/subcategories/subcategory.schema';
 import { AdminSubcategoriesController } from './subcategories.admin.controller';
 import { PromoCode, PromoCodeSchema } from '../promo-codes/promo-code.schema';
 import { AdminPromoCodesController } from './promo-codes.admin.controller';
 import { AdminHeroController } from './hero.admin.controller';
+import { AdminGalleryController } from './gallery.admin.controller';
 import { AdminCustomersController } from './customers.admin.controller';
 import { Customer, CustomerSchema } from '../customers/customer.schema';
 import { DiscountsModule } from '../discounts/discounts.module';
@@ -42,6 +44,7 @@ import { DiscountsModule } from '../discounts/discounts.module';
       { name: Discount.name, schema: DiscountSchema },
       { name: ContactCard.name, schema: ContactCardSchema },
       { name: Hero.name, schema: HeroSchema },
+      { name: GalleryImage.name, schema: GalleryImageSchema },
       { name: Customer.name, schema: CustomerSchema },
       { name: Subcategory.name, schema: SubcategorySchema },
       { name: PromoCode.name, schema: PromoCodeSchema },
@@ -58,6 +61,7 @@ import { DiscountsModule } from '../discounts/discounts.module';
     AdminDashboardController,
     AdminContactsController,
     AdminHeroController,
+    AdminGalleryController,
     AdminCustomersController,
     AdminSubcategoriesController,
     AdminPromoCodesController,

@@ -12,7 +12,8 @@
     "format": "prettier --write .",
     "seed": "ts-node ./scripts/seed.ts",
     "seed:products:fixed": "ts-node ./scripts/seed-products-fixed.ts",
-    "seed:orders": "ts-node ./scripts/seed-orders.ts"
+    "seed:orders": "ts-node ./scripts/seed-orders.ts",
+    "seed:real": "ts-node ./scripts/seed-real-products.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
@@ -42,12 +43,14 @@
     "@types/multer": "^2.0.0",
     "@types/node": "^20.11.30",
     "@types/nodemailer": "^7.0.10",
+    "@types/sharp": "^0.31.1",
     "@typescript-eslint/eslint-plugin": "^8.56.0",
     "@typescript-eslint/parser": "^8.56.0",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.1.3",
     "prettier": "^3.2.5",
+    "sharp": "^0.34.5",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.4.0"

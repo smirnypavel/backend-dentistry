@@ -16,6 +16,7 @@ import { DiscountsModule } from './discounts/discounts.module';
 import { PromoCodesModule } from './promo-codes/promo-codes.module';
 import { ContactsModule } from './company/contacts/contacts.module';
 import { HeroModule } from './company/hero/hero.module';
+import { GalleryModule } from './company/gallery/gallery.module';
 import { CustomersModule } from './customers/customers.module';
 
 @Module({
@@ -60,6 +61,7 @@ import { CustomersModule } from './customers/customers.module';
     PromoCodesModule,
     ContactsModule,
     HeroModule,
+    GalleryModule,
     CustomersModule,
   ],
   controllers: [HealthController],
