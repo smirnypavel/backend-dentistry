@@ -90,6 +90,9 @@ export class Product {
 
   @Prop({ type: Boolean, default: true })
   isActive!: boolean;
+
+  @Prop({ type: Boolean, default: false })
+  isNew!: boolean;
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);

@@ -371,6 +371,11 @@ class CreateProductDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isNew?: boolean;
 }
 
 class UpdateProductDto {
@@ -430,6 +435,11 @@ class UpdateProductDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isNew?: boolean;
 }
 
 function toObjectId(id?: string): Types.ObjectId | undefined {
