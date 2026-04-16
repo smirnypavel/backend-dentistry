@@ -30,6 +30,8 @@ import { AdminGalleryController } from './gallery.admin.controller';
 import { AdminCustomersController } from './customers.admin.controller';
 import { Customer, CustomerSchema } from '../customers/customer.schema';
 import { DiscountsModule } from '../discounts/discounts.module';
+import { PromoSlide, PromoSlideSchema } from '../company/promo-slides/promo-slide.schema';
+import { AdminPromoSlidesController } from './promo-slides.admin.controller';
 
 @Module({
   imports: [
@@ -48,6 +50,7 @@ import { DiscountsModule } from '../discounts/discounts.module';
       { name: Customer.name, schema: CustomerSchema },
       { name: Subcategory.name, schema: SubcategorySchema },
       { name: PromoCode.name, schema: PromoCodeSchema },
+      { name: PromoSlide.name, schema: PromoSlideSchema },
     ]),
   ],
   controllers: [
@@ -65,6 +68,7 @@ import { DiscountsModule } from '../discounts/discounts.module';
     AdminCustomersController,
     AdminSubcategoriesController,
     AdminPromoCodesController,
+    AdminPromoSlidesController,
   ],
   providers: [UploadsService, AdminGuard],
 })
