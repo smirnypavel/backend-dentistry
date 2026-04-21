@@ -49,6 +49,11 @@ class TargetGroupDto {
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   @IsArray()
+  subcategoryIds?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
   manufacturerIds?: string[];
 
   @ApiPropertyOptional({ type: [String] })
@@ -116,6 +121,11 @@ class CreateDiscountDto {
   @IsOptional()
   @IsArray()
   categoryIds?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  subcategoryIds?: string[];
 
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
@@ -205,6 +215,11 @@ class ApplyDiscountTargetsDto {
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   @IsArray()
+  subcategoryIds?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
   manufacturerIds?: string[];
 
   @ApiPropertyOptional({ type: [String] })
@@ -277,12 +292,14 @@ export class AdminDiscountsController {
       stackable: dto.stackable ?? false,
       productIds: toIds(dto.productIds),
       categoryIds: toIds(dto.categoryIds),
+      subcategoryIds: toIds(dto.subcategoryIds),
       manufacturerIds: toIds(dto.manufacturerIds),
       countryIds: toIds(dto.countryIds),
       tags: dto.tags ?? [],
       targetGroups: (dto.targetGroups ?? []).map((g) => ({
         productIds: toIds(g.productIds),
         categoryIds: toIds(g.categoryIds),
+        subcategoryIds: toIds(g.subcategoryIds),
         manufacturerIds: toIds(g.manufacturerIds),
         countryIds: toIds(g.countryIds),
         tags: g.tags ?? [],
@@ -308,6 +325,7 @@ export class AdminDiscountsController {
     if (dto.stackable !== undefined) patch.stackable = dto.stackable;
     if (dto.productIds !== undefined) patch.productIds = toIds(dto.productIds);
     if (dto.categoryIds !== undefined) patch.categoryIds = toIds(dto.categoryIds);
+    if (dto.subcategoryIds !== undefined) patch.subcategoryIds = toIds(dto.subcategoryIds);
     if (dto.manufacturerIds !== undefined) patch.manufacturerIds = toIds(dto.manufacturerIds);
     if (dto.countryIds !== undefined) patch.countryIds = toIds(dto.countryIds);
     if (dto.tags !== undefined) patch.tags = dto.tags ?? [];
@@ -315,6 +333,7 @@ export class AdminDiscountsController {
       patch.targetGroups = (dto.targetGroups ?? []).map((g) => ({
         productIds: toIds(g.productIds),
         categoryIds: toIds(g.categoryIds),
+        subcategoryIds: toIds(g.subcategoryIds),
         manufacturerIds: toIds(g.manufacturerIds),
         countryIds: toIds(g.countryIds),
         tags: g.tags ?? [],
@@ -332,6 +351,7 @@ export class AdminDiscountsController {
     const addToSet: Record<string, unknown> = {};
     if (dto.productIds?.length) addToSet.productIds = { $each: toIds(dto.productIds) };
     if (dto.categoryIds?.length) addToSet.categoryIds = { $each: toIds(dto.categoryIds) };
+    if (dto.subcategoryIds?.length) addToSet.subcategoryIds = { $each: toIds(dto.subcategoryIds) };
     if (dto.manufacturerIds?.length)
       addToSet.manufacturerIds = { $each: toIds(dto.manufacturerIds) };
     if (dto.countryIds?.length) addToSet.countryIds = { $each: toIds(dto.countryIds) };
@@ -352,6 +372,7 @@ export class AdminDiscountsController {
     const pulls: Record<string, unknown> = {};
     if (dto.productIds?.length) pulls.productIds = { $in: toIds(dto.productIds) };
     if (dto.categoryIds?.length) pulls.categoryIds = { $in: toIds(dto.categoryIds) };
+    if (dto.subcategoryIds?.length) pulls.subcategoryIds = { $in: toIds(dto.subcategoryIds) };
     if (dto.manufacturerIds?.length) pulls.manufacturerIds = { $in: toIds(dto.manufacturerIds) };
     if (dto.countryIds?.length) pulls.countryIds = { $in: toIds(dto.countryIds) };
     if (dto.tags?.length) pulls.tags = { $in: (dto.tags ?? []).filter(Boolean) };

@@ -1,10 +1,21 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  NotFoundException,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import {
   ApiExtraModels,
   ApiOperation,
   ApiSecurity,
   ApiBearerAuth,
+  ApiNoContentResponse,
   ApiTags,
   ApiOkResponse,
   ApiPropertyOptional,
@@ -221,5 +232,22 @@ export class AdminCustomersController {
     ]);
 
     return { items, page, limit, total };
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete customer account by id' })
+  @ApiNoContentResponse({ description: 'Customer account deleted' })
+  async deleteById(@Param('id') id: string) {
+    const customer = await this.customerModel.findByIdAndDelete(id).lean();
+
+    if (!customer) {
+      throw new NotFoundException('Customer not found');
+    }
+
+    await this.orderModel.updateMany(
+      { customerId: customer._id },
+      { $unset: { customerId: 1 } },
+    );
   }
 }

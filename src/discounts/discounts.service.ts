@@ -40,6 +40,14 @@ export class DiscountsService {
     } else {
       subAnd.push({ $or: [{ categoryIds: { $size: 0 } }] });
     }
+    // subcategoryIds
+    if (ctx.subcategoryIds?.length) {
+      subAnd.push({
+        $or: [{ subcategoryIds: { $in: ctx.subcategoryIds } }, { subcategoryIds: { $size: 0 } }],
+      });
+    } else {
+      subAnd.push({ $or: [{ subcategoryIds: { $size: 0 } }] });
+    }
     // manufacturerIds
     if (ctx.manufacturerId) {
       subAnd.push({
@@ -85,6 +93,11 @@ export class DiscountsService {
               $or: [{ categoryIds: { $in: ctx.categoryIds } }, { categoryIds: { $size: 0 } }],
             } as never)
           : ({ $or: [{ categoryIds: { $size: 0 } }] } as never),
+        ctx.subcategoryIds?.length
+          ? ({
+              $or: [{ subcategoryIds: { $in: ctx.subcategoryIds } }, { subcategoryIds: { $size: 0 } }],
+            } as never)
+          : ({ $or: [{ subcategoryIds: { $size: 0 } }] } as never),
         ctx.manufacturerId
           ? ({
               $or: [{ manufacturerIds: ctx.manufacturerId }, { manufacturerIds: { $size: 0 } }],

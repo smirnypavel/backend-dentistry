@@ -6,6 +6,7 @@ import { PromoCode, PromoCodeDocument } from './promo-code.schema';
 export interface PromoApplicableItem {
   productId: string | Types.ObjectId;
   categoryIds: (string | Types.ObjectId)[];
+  subcategoryIds?: (string | Types.ObjectId)[];
   priceFinal: number; // price after automatic discounts
 }
 
@@ -52,9 +53,11 @@ export class PromoCodesService {
     promo: PromoCode,
     productId: string | Types.ObjectId,
     categoryIds: (string | Types.ObjectId)[],
+    subcategoryIds?: (string | Types.ObjectId)[],
   ): boolean {
     const pid = String(productId);
     const cids = categoryIds.map(String);
+    const sids = (subcategoryIds || []).map(String);
 
     // Check exclusions first
     if (promo.excludedProductIds?.some((id) => String(id) === pid)) return false;
@@ -64,12 +67,19 @@ export class PromoCodesService {
     ) {
       return false;
     }
+    if (
+      promo.excludedSubcategoryIds?.length &&
+      sids.some((s) => promo.excludedSubcategoryIds.some((es) => String(es) === s))
+    ) {
+      return false;
+    }
 
-    // If allowed lists are both empty => applies to all
+    // If allowed lists are all empty => applies to all
     const hasAllowedProducts = (promo.allowedProductIds?.length ?? 0) > 0;
     const hasAllowedCategories = (promo.allowedCategoryIds?.length ?? 0) > 0;
+    const hasAllowedSubcategories = (promo.allowedSubcategoryIds?.length ?? 0) > 0;
 
-    if (!hasAllowedProducts && !hasAllowedCategories) return true;
+    if (!hasAllowedProducts && !hasAllowedCategories && !hasAllowedSubcategories) return true;
 
     // Check allowed
     if (hasAllowedProducts && promo.allowedProductIds.some((id) => String(id) === pid)) {
@@ -78,6 +88,12 @@ export class PromoCodesService {
     if (
       hasAllowedCategories &&
       cids.some((c) => promo.allowedCategoryIds.some((ac) => String(ac) === c))
+    ) {
+      return true;
+    }
+    if (
+      hasAllowedSubcategories &&
+      sids.some((s) => promo.allowedSubcategoryIds.some((as) => String(as) === s))
     ) {
       return true;
     }
@@ -91,7 +107,7 @@ export class PromoCodesService {
    */
   applyToItems(promo: PromoCode, items: PromoApplicableItem[]): PromoAppliedItem[] {
     return items.map((item) => {
-      const applicable = this.isApplicable(promo, item.productId, item.categoryIds);
+      const applicable = this.isApplicable(promo, item.productId, item.categoryIds, item.subcategoryIds);
       if (!applicable) {
         return {
           productId: String(item.productId),

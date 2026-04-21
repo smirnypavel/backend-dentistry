@@ -85,6 +85,7 @@ export class OrdersService {
           price: variant.price,
           productId: new Types.ObjectId(String(product._id)),
           categoryIds: (product.categoryIds || []).map((id) => new Types.ObjectId(String(id))),
+          subcategoryIds: (product.subcategoryIds || []).map((id) => new Types.ObjectId(String(id))),
           manufacturerId: new Types.ObjectId(String(variant.manufacturerId)),
           countryId: variant.countryId ? new Types.ObjectId(String(variant.countryId)) : undefined,
           tags: product.tags || [],
@@ -139,6 +140,10 @@ export class OrdersService {
           productMap
             .get(String(it.productId))
             ?.categoryIds?.map((id) => new Types.ObjectId(String(id))) || [],
+        subcategoryIds:
+          productMap
+            .get(String(it.productId))
+            ?.subcategoryIds?.map((id) => new Types.ObjectId(String(id))) || [],
         priceFinal: it.price,
       }));
       const promoResults = this.promoCodes.applyToItems(promo, promoItems);

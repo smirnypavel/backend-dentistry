@@ -45,12 +45,18 @@ export class PromoCode {
   @Prop({ type: [Types.ObjectId], default: [] })
   allowedCategoryIds!: Types.ObjectId[];
 
+  @Prop({ type: [Types.ObjectId], default: [] })
+  allowedSubcategoryIds!: Types.ObjectId[];
+
   // Exclusions: these products/categories are always excluded
   @Prop({ type: [Types.ObjectId], default: [] })
   excludedProductIds!: Types.ObjectId[];
 
   @Prop({ type: [Types.ObjectId], default: [] })
   excludedCategoryIds!: Types.ObjectId[];
+
+  @Prop({ type: [Types.ObjectId], default: [] })
+  excludedSubcategoryIds!: Types.ObjectId[];
 }
 
 export const PromoCodeSchema = SchemaFactory.createForClass(PromoCode);

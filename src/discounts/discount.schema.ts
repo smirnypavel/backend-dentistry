@@ -14,6 +14,9 @@ export class DiscountTargetGroup {
   categoryIds?: Types.ObjectId[];
 
   @Prop({ type: [Types.ObjectId], default: [] })
+  subcategoryIds?: Types.ObjectId[];
+
+  @Prop({ type: [Types.ObjectId], default: [] })
   manufacturerIds?: Types.ObjectId[];
 
   @Prop({ type: [Types.ObjectId], default: [] })
@@ -62,6 +65,9 @@ export class Discount {
   categoryIds!: Types.ObjectId[];
 
   @Prop({ type: [Types.ObjectId], default: [] })
+  subcategoryIds!: Types.ObjectId[];
+
+  @Prop({ type: [Types.ObjectId], default: [] })
   manufacturerIds!: Types.ObjectId[];
 
   @Prop({ type: [Types.ObjectId], default: [] })
@@ -83,11 +89,13 @@ export const DiscountSchema = SchemaFactory.createForClass(Discount);
 DiscountSchema.index({ isActive: 1, startsAt: 1, endsAt: 1, priority: 1 });
 DiscountSchema.index({ productIds: 1 });
 DiscountSchema.index({ categoryIds: 1 });
+DiscountSchema.index({ subcategoryIds: 1 });
 DiscountSchema.index({ manufacturerIds: 1 });
 DiscountSchema.index({ countryIds: 1 });
 DiscountSchema.index({ tags: 1 });
 DiscountSchema.index({ 'targetGroups.productIds': 1 });
 DiscountSchema.index({ 'targetGroups.categoryIds': 1 });
+DiscountSchema.index({ 'targetGroups.subcategoryIds': 1 });
 DiscountSchema.index({ 'targetGroups.manufacturerIds': 1 });
 DiscountSchema.index({ 'targetGroups.countryIds': 1 });
 DiscountSchema.index({ 'targetGroups.tags': 1 });
@@ -96,6 +104,7 @@ export interface DiscountContext {
   price: number;
   productId: Types.ObjectId;
   categoryIds?: Types.ObjectId[];
+  subcategoryIds?: Types.ObjectId[];
   manufacturerId?: Types.ObjectId;
   countryId?: Types.ObjectId;
   tags?: string[];

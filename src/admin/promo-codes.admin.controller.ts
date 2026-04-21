@@ -93,12 +93,22 @@ class CreatePromoCodeDto {
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   @IsArray()
+  allowedSubcategoryIds?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
   excludedProductIds?: string[];
 
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   @IsArray()
   excludedCategoryIds?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  excludedSubcategoryIds?: string[];
 }
 
 class UpdatePromoCodeDto {
@@ -162,12 +172,22 @@ class UpdatePromoCodeDto {
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   @IsArray()
+  allowedSubcategoryIds?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
   excludedProductIds?: string[];
 
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   @IsArray()
   excludedCategoryIds?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  excludedSubcategoryIds?: string[];
 }
 
 class ListPromoCodesQueryDto {
@@ -305,8 +325,10 @@ export class AdminPromoCodesController {
       endsAt: dto.endsAt ? new Date(dto.endsAt) : undefined,
       allowedProductIds: toIds(dto.allowedProductIds),
       allowedCategoryIds: toIds(dto.allowedCategoryIds),
+      allowedSubcategoryIds: toIds(dto.allowedSubcategoryIds),
       excludedProductIds: toIds(dto.excludedProductIds),
       excludedCategoryIds: toIds(dto.excludedCategoryIds),
+      excludedSubcategoryIds: toIds(dto.excludedSubcategoryIds),
     });
     return doc.toObject();
   }
@@ -329,10 +351,14 @@ export class AdminPromoCodesController {
     if (dto.allowedProductIds !== undefined) patch.allowedProductIds = toIds(dto.allowedProductIds);
     if (dto.allowedCategoryIds !== undefined)
       patch.allowedCategoryIds = toIds(dto.allowedCategoryIds);
+    if (dto.allowedSubcategoryIds !== undefined)
+      patch.allowedSubcategoryIds = toIds(dto.allowedSubcategoryIds);
     if (dto.excludedProductIds !== undefined)
       patch.excludedProductIds = toIds(dto.excludedProductIds);
     if (dto.excludedCategoryIds !== undefined)
       patch.excludedCategoryIds = toIds(dto.excludedCategoryIds);
+    if (dto.excludedSubcategoryIds !== undefined)
+      patch.excludedSubcategoryIds = toIds(dto.excludedSubcategoryIds);
 
     await this.model.updateOne({ _id: new Types.ObjectId(id) }, { $set: patch });
     return this.model.findById(new Types.ObjectId(id)).lean();
