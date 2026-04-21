@@ -12,10 +12,10 @@ import {
 import { ApiOperation, ApiTags, ApiOkResponse, ApiBody } from '@nestjs/swagger';
 import { Request } from 'express';
 import { IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import { JwtService } from '@nestjs/jwt';
 import { ProductsService } from './products.service';
 import { FindProductsQueryDto } from './dto';
 import { ReviewsService } from '../../reviews/reviews.service';
-import { CustomerAuthService } from '../../customers/customer-auth.service';
 
 class CreateReviewDto {
   @IsString()
@@ -39,7 +39,7 @@ export class ProductsController {
   constructor(
     private readonly service: ProductsService,
     private readonly reviewsService: ReviewsService,
-    private readonly customerAuthService: CustomerAuthService,
+    private readonly jwtService: JwtService,
   ) {}
 
   @Get()
@@ -255,9 +255,11 @@ export class ProductsController {
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.slice(7);
       try {
-        const customer = await this.customerAuthService.verifyAccessToken(token);
-        customerId = String(customer._id);
-        if (!authorName && customer.name) authorName = customer.name;
+        const payload = await this.jwtService.verifyAsync<{ sub?: string; name?: string }>(token);
+        if (payload?.sub) {
+          customerId = payload.sub;
+          if (!authorName && payload.name) authorName = payload.name;
+        }
       } catch {
         // ignore invalid token — allow anonymous submission
       }
