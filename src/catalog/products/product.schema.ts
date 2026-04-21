@@ -93,6 +93,12 @@ export class Product {
 
   @Prop({ type: Boolean, default: false })
   isNew!: boolean;
+
+  @Prop({ type: Number, default: 0 })
+  ratingAvg!: number;
+
+  @Prop({ type: Number, default: 0 })
+  ratingCount!: number;
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);

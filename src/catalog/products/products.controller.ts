@@ -1,12 +1,46 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
-import { ApiOperation, ApiTags, ApiOkResponse } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  NotFoundException,
+  Param,
+  Post,
+  Query,
+  Req,
+} from '@nestjs/common';
+import { ApiOperation, ApiTags, ApiOkResponse, ApiBody } from '@nestjs/swagger';
+import { Request } from 'express';
+import { IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import { ProductsService } from './products.service';
 import { FindProductsQueryDto } from './dto';
+import { ReviewsService } from '../../reviews/reviews.service';
+import { CustomerAuthService } from '../../customers/customer-auth.service';
+
+class CreateReviewDto {
+  @IsString()
+  @MaxLength(120)
+  authorName!: string;
+
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  rating!: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1200)
+  comment?: string;
+}
 
 @ApiTags('catalog')
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly service: ProductsService) {}
+  constructor(
+    private readonly service: ProductsService,
+    private readonly reviewsService: ReviewsService,
+    private readonly customerAuthService: CustomerAuthService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'List products with filters' })
@@ -77,8 +111,7 @@ export class ProductsController {
   }
 
   @Get(':idOrSlug')
-  @ApiOperation({ summary: 'Get product by id or slug' })
-  @ApiOkResponse({
+  @ApiOperation({ summary: 'Get product by id or slug' })  @ApiOkResponse({
     description: 'Product document',
     schema: {
       example: {
@@ -193,5 +226,52 @@ export class ProductsController {
   })
   getOne(@Param('idOrSlug') idOrSlug: string) {
     return this.service.findOne(idOrSlug);
+  }
+
+  @Get(':idOrSlug/reviews')
+  @ApiOperation({ summary: 'Get approved reviews for a product' })
+  async getReviews(@Param('idOrSlug') idOrSlug: string) {
+    const product = await this.service.findOne(idOrSlug);
+    if (!product) return [];
+    return this.reviewsService.findByProduct(String(product._id), true);
+  }
+
+  @Post(':idOrSlug/reviews')
+  @HttpCode(201)
+  @ApiOperation({ summary: 'Submit a customer review' })
+  @ApiBody({ type: CreateReviewDto })
+  async createReview(
+    @Param('idOrSlug') idOrSlug: string,
+    @Body() body: CreateReviewDto,
+    @Req() req: Request,
+  ) {
+    const product = await this.service.findOne(idOrSlug);
+    if (!product) throw new NotFoundException('Product not found');
+
+    let customerId: string | undefined;
+    let authorName = body.authorName;
+
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.slice(7);
+      try {
+        const customer = await this.customerAuthService.verifyAccessToken(token);
+        customerId = String(customer._id);
+        if (!authorName && customer.name) authorName = customer.name;
+      } catch {
+        // ignore invalid token — allow anonymous submission
+      }
+    }
+
+    await this.reviewsService.create({
+      productId: String(product._id),
+      customerId,
+      authorName: authorName || 'Анонім',
+      rating: body.rating,
+      comment: body.comment,
+      isApproved: false,
+      source: 'customer',
+    });
+    return { message: 'Дякуємо! Відгук надіслано на перевірку.' };
   }
 }
