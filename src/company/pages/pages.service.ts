@@ -133,6 +133,17 @@ const DEFAULTS: Record<string, Record<string, unknown>> = {
     embedMapUrl:
       'https://maps.google.com/maps?q=%D0%B2%D1%83%D0%BB.+%D0%A1%D0%B0%D0%BA%D1%81%D0%B0%D0%B3%D0%B0%D0%BD%D1%81%D1%8C%D0%BA%D0%BE%D0%B3%D0%BE+54/56,+%D0%9A%D0%B8%D1%97%D0%B2&z=17&output=embed',
   },
+
+  'promotions-section': {
+    sectionTitle: 'Акційні пропозиції',
+    countdownLabel: 'До кінця акції',
+    countdownSublabel: 'Встигніть замовити!',
+    priceLabel: 'Акційна ціна',
+    orderBtnText: 'Замовити зараз',
+    detailsBtnText: 'Деталі',
+    showAllBtnText: 'Усі акційні пропозиції',
+    collapseBtnText: 'Згорнути',
+  },
 };
 
 @Injectable()
