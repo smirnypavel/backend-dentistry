@@ -34,12 +34,15 @@ import { PromoSlide, PromoSlideSchema } from '../company/promo-slides/promo-slid
 import { AdminPromoSlidesController } from './promo-slides.admin.controller';
 import { AdminReviewsController } from './reviews.admin.controller';
 import { ReviewsModule } from '../reviews/reviews.module';
+import { PagesModule } from '../company/pages/pages.module';
+import { AdminPagesController } from './pages.admin.controller';
 
 @Module({
   imports: [
     AdminAuthModule,
     DiscountsModule,
     ReviewsModule,
+    PagesModule,
     MongooseModule.forFeature([
       { name: Country.name, schema: CountrySchema },
       { name: Manufacturer.name, schema: ManufacturerSchema },
@@ -73,6 +76,7 @@ import { ReviewsModule } from '../reviews/reviews.module';
     AdminPromoCodesController,
     AdminPromoSlidesController,
     AdminReviewsController,
+    AdminPagesController,
   ],
   providers: [UploadsService, AdminGuard],
 })

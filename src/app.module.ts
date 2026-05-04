@@ -19,6 +19,7 @@ import { HeroModule } from './company/hero/hero.module';
 import { GalleryModule } from './company/gallery/gallery.module';
 import { CustomersModule } from './customers/customers.module';
 import { PromoSlidesModule } from './company/promo-slides/promo-slides.module';
+import { PagesModule } from './company/pages/pages.module';
 
 @Module({
   imports: [
@@ -65,6 +66,7 @@ import { PromoSlidesModule } from './company/promo-slides/promo-slides.module';
     GalleryModule,
     CustomersModule,
     PromoSlidesModule,
+    PagesModule,
   ],
   controllers: [HealthController],
   providers: [
