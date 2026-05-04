@@ -143,6 +143,8 @@ const DEFAULTS: Record<string, Record<string, unknown>> = {
     detailsBtnText: 'Деталі',
     showAllBtnText: 'Усі акційні пропозиції',
     collapseBtnText: 'Згорнути',
+    sliderIds: [],
+    gridIds: [],
   },
 };
 
