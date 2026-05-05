@@ -1,13 +1,14 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Order, OrderDocument } from './order.schema';
+import { Order, OrderDocument, OrderStatus } from './order.schema';
 import { CreateOrderDto } from './dto';
 import { InjectModel as InjectModel2 } from '@nestjs/mongoose';
 import { Product, ProductDocument } from '../catalog/products/product.schema';
 import type { ProductVariant } from '../catalog/products/product.schema';
 import { DiscountsService } from '../discounts/discounts.service';
 import { PromoCodesService } from '../promo-codes/promo-codes.service';
+import { CustomersService } from '../customers/customers.service';
 import crypto from 'crypto';
 
 export interface ListCustomerOrdersParams {
@@ -38,6 +39,7 @@ export class OrdersService {
     @InjectModel2(Product.name) private readonly productModel: Model<ProductDocument>,
     private readonly discounts: DiscountsService,
     private readonly promoCodes: PromoCodesService,
+    private readonly customersService: CustomersService,
   ) {}
 
   async create(dto: CreateOrderDto, idempotencyKey?: string, options?: CreateOrderOptions) {
@@ -119,6 +121,7 @@ export class OrdersService {
             priceAfter: a.priceAfter,
           })),
           promoDiscount: 0 as number,
+          cashbackPercent: (product as { cashbackPercent?: number }).cashbackPercent ?? 0,
         };
       }),
     );
@@ -169,7 +172,30 @@ export class OrdersService {
     }
 
     const finalItemsTotal = items.reduce((sum, it) => sum + it.price * it.quantity, 0);
-    const finalTotal = finalItemsTotal + deliveryFee;
+    let finalTotal = finalItemsTotal + deliveryFee;
+
+    // Apply cashback balance if requested
+    let cashbackUsed = 0;
+    if ((dto.cashbackAmountToUse ?? 0) > 0 && customerObjectId) {
+      const customer = await this.customersService.findById(customerObjectId);
+      const balance = customer?.cashbackBalance ?? 0;
+      const requested = dto.cashbackAmountToUse ?? 0;
+      cashbackUsed = Number(Math.min(balance, requested, finalTotal).toFixed(2));
+      if (cashbackUsed > 0) {
+        await this.customersService.adjustCashback(customerObjectId, -cashbackUsed);
+        finalTotal = Number(Math.max(0, finalTotal - cashbackUsed).toFixed(2));
+      }
+    }
+
+    // Compute cashback to be earned (credited only when order → done)
+    const cashbackEarned = Number(
+      items
+        .reduce((sum, it) => {
+          const pct = (it as { cashbackPercent?: number }).cashbackPercent ?? 0;
+          return sum + (it.price * it.quantity * pct) / 100;
+        }, 0)
+        .toFixed(2),
+    );
 
     // Create the order; use unique index on (clientId, idempotencyKeyHash) to avoid races
     try {
@@ -187,12 +213,16 @@ export class OrdersService {
         promoCode,
         promoCodeName,
         promoCodeDiscount: promoCodeDiscount || undefined,
+        cashbackUsed: cashbackUsed || undefined,
+        cashbackEarned: cashbackEarned || undefined,
+        cashbackCredited: false,
         idempotencyKey: key || undefined,
         idempotencyKeyHash: idemHash,
       });
       return order.toObject();
     } catch (err: unknown) {
       // If duplicate key due to race, fetch and return existing
+      // If we already deducted cashback, it's fine — the existing order has the same deduction
       const anyErr = err as { code?: number } | undefined;
       if (anyErr?.code === 11000 && idemHash) {
         const conflictFilter = customerObjectId
@@ -211,6 +241,47 @@ export class OrdersService {
       .sort({ createdAt: -1 })
       .limit(50)
       .lean();
+  }
+
+  /**
+   * Update order status with cashback side-effects:
+   * - status → 'done': credit cashbackEarned to customer balance (once)
+   * - status → 'cancelled': refund cashbackUsed to customer balance
+   */
+  async updateOrderStatus(id: string, status: OrderStatus): Promise<OrderLean | null> {
+    const prev = await this.model.findById(new Types.ObjectId(id)).lean();
+    if (!prev) return null;
+
+    const updated = await this.model
+      .findByIdAndUpdate(new Types.ObjectId(id), { $set: { status } }, { new: true })
+      .lean();
+    if (!updated) return null;
+
+    // Credit cashback on completion (only once)
+    if (
+      status === 'done' &&
+      prev.status !== 'done' &&
+      updated.customerId &&
+      (updated.cashbackEarned ?? 0) > 0 &&
+      !updated.cashbackCredited
+    ) {
+      await this.model.updateOne({ _id: new Types.ObjectId(id) }, { $set: { cashbackCredited: true } });
+      await this.customersService.adjustCashback(updated.customerId, updated.cashbackEarned ?? 0);
+    }
+
+    // Refund cashback spend on cancellation (only once)
+    if (
+      status === 'cancelled' &&
+      prev.status !== 'cancelled' &&
+      updated.customerId &&
+      (updated.cashbackUsed ?? 0) > 0
+    ) {
+      const refundAmount = updated.cashbackUsed ?? 0;
+      await this.model.updateOne({ _id: new Types.ObjectId(id) }, { $set: { cashbackUsed: 0 } });
+      await this.customersService.adjustCashback(updated.customerId, refundAmount);
+    }
+
+    return updated as OrderLean;
   }
 
   async attachByPhoneAndClientId(

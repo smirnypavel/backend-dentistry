@@ -36,6 +36,7 @@ import { AdminReviewsController } from './reviews.admin.controller';
 import { ReviewsModule } from '../reviews/reviews.module';
 import { PagesModule } from '../company/pages/pages.module';
 import { AdminPagesController } from './pages.admin.controller';
+import { OrdersModule } from '../orders/orders.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { AdminPagesController } from './pages.admin.controller';
     DiscountsModule,
     ReviewsModule,
     PagesModule,
+    OrdersModule,
     MongooseModule.forFeature([
       { name: Country.name, schema: CountrySchema },
       { name: Manufacturer.name, schema: ManufacturerSchema },

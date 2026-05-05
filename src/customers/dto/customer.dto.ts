@@ -25,6 +25,9 @@ export class CustomerDto {
 
   @ApiPropertyOptional({ example: '2026-02-19T12:05:00.000Z', nullable: true })
   lastLoginAt!: string | null;
+
+  @ApiProperty({ example: 0, description: 'Cashback balance in UAH' })
+  cashbackBalance!: number;
 }
 
 const toIsoString = (value?: Date | null): string | null => (value ? value.toISOString() : null);
@@ -38,4 +41,5 @@ export const toCustomerDto = (customer: CustomerDocument): CustomerDto => ({
   createdAt: toIsoString(customer.createdAt),
   updatedAt: toIsoString(customer.updatedAt),
   lastLoginAt: toIsoString(customer.lastLoginAt),
+  cashbackBalance: customer.cashbackBalance ?? 0,
 });

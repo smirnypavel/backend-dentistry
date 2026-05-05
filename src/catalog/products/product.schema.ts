@@ -99,6 +99,10 @@ export class Product {
 
   @Prop({ type: Number, default: 0 })
   ratingCount!: number;
+
+  /** Cashback percentage for this product (0 = none, e.g. 5 = 5%) */
+  @Prop({ type: Number, default: 0, min: 0, max: 100 })
+  cashbackPercent!: number;
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);

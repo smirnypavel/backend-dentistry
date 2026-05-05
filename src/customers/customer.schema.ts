@@ -34,6 +34,10 @@ export class Customer {
 
   @Prop()
   updatedAt?: Date;
+
+  /** Accumulated cashback balance in UAH */
+  @Prop({ type: Number, default: 0 })
+  cashbackBalance!: number;
 }
 
 export const CustomerSchema = SchemaFactory.createForClass(Customer);

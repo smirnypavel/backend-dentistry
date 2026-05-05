@@ -109,6 +109,12 @@ export class CreateOrderDto {
   @IsString()
   @MaxLength(50)
   promoCode?: string;
+
+  @ApiPropertyOptional({ description: 'Amount of cashback balance to spend on this order (UAH)' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  cashbackAmountToUse?: number;
 }
 
 export class GetHistoryQueryDto {

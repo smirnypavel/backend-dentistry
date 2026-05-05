@@ -69,6 +69,10 @@ export class OrderItemSnapshot {
 
   @Prop({ type: Number, default: 0 })
   promoDiscount?: number; // promo code discount amount for this item
+
+  /** Snapshot of product cashback percent at order time */
+  @Prop({ type: Number, default: 0 })
+  cashbackPercent?: number;
 }
 
 const OrderItemSnapshotSchema = SchemaFactory.createForClass(OrderItemSnapshot);
@@ -121,6 +125,19 @@ export class Order {
 
   @Prop({ trim: true })
   idempotencyKeyHash?: string;
+
+  // Cashback
+  /** Cashback earned from this order (credited when status → done) */
+  @Prop({ type: Number, default: 0 })
+  cashbackEarned?: number;
+
+  /** Cashback balance spent on this order */
+  @Prop({ type: Number, default: 0 })
+  cashbackUsed?: number;
+
+  /** Whether cashbackEarned has been credited to the customer's balance */
+  @Prop({ type: Boolean, default: false })
+  cashbackCredited?: boolean;
 }
 
 export const OrderSchema = SchemaFactory.createForClass(Order);

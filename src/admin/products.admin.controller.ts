@@ -376,6 +376,11 @@ class CreateProductDto {
   @IsOptional()
   @IsBoolean()
   isNew?: boolean;
+
+  @ApiPropertyOptional({ description: 'Cashback percentage (0–100)', minimum: 0, maximum: 100 })
+  @IsOptional()
+  @IsNumber()
+  cashbackPercent?: number;
 }
 
 class UpdateProductDto {
@@ -440,6 +445,11 @@ class UpdateProductDto {
   @IsOptional()
   @IsBoolean()
   isNew?: boolean;
+
+  @ApiPropertyOptional({ description: 'Cashback percentage (0–100)', minimum: 0, maximum: 100 })
+  @IsOptional()
+  @IsNumber()
+  cashbackPercent?: number;
 }
 
 function toObjectId(id?: string): Types.ObjectId | undefined {
@@ -462,6 +472,8 @@ function mapDtoToDoc(dto: CreateProductDto | UpdateProductDto): Partial<Product>
   if ('attributes' in dto && dto.attributes !== undefined)
     mapped.attributes = dto.attributes as never;
   if ('isActive' in dto && dto.isActive !== undefined) mapped.isActive = dto.isActive as never;
+  if ('cashbackPercent' in dto && dto.cashbackPercent !== undefined)
+    mapped.cashbackPercent = dto.cashbackPercent as never;
 
   if ('variants' in dto && dto.variants !== undefined) {
     mapped.variants = (dto.variants ?? []).map((v) => ({

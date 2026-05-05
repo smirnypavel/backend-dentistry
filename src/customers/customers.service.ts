@@ -153,4 +153,20 @@ export class CustomersService {
       )
       .exec();
   }
+
+  /**
+   * Add (positive) or deduct (negative) cashback balance atomically.
+   * Uses $inc to avoid race conditions; clamps to 0 via $max on result.
+   */
+  async adjustCashback(customerId: string | Types.ObjectId, delta: number): Promise<void> {
+    if (delta === 0) return;
+    await this.customerModel
+      .updateOne(
+        { _id: customerId },
+        delta > 0
+          ? { $inc: { cashbackBalance: delta } }
+          : [{ $set: { cashbackBalance: { $max: [0, { $add: ['$cashbackBalance', delta] }] } } }],
+      )
+      .exec();
+  }
 }

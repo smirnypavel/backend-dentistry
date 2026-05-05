@@ -11,6 +11,7 @@ import {
 } from '@nestjs/swagger';
 import { Model, Types } from 'mongoose';
 import { Order, OrderDocument, OrderStatus } from '../orders/order.schema';
+import { OrdersService } from '../orders/orders.service';
 import { AdminGuard } from './admin.guard';
 import { IsIn, IsNumber, IsOptional, IsString } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
@@ -93,7 +94,10 @@ class UpdateOrderStatusDto {
 @ApiExtraModels(AdminListOrdersQueryDto)
 @Controller('admin/orders')
 export class AdminOrdersController {
-  constructor(@InjectModel(Order.name) private readonly model: Model<OrderDocument>) {}
+  constructor(
+    @InjectModel(Order.name) private readonly model: Model<OrderDocument>,
+    private readonly ordersService: OrdersService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'List orders (paginated)' })
@@ -184,8 +188,6 @@ export class AdminOrdersController {
   @ApiOperation({ summary: 'Update order status' })
   @ApiOkResponse({ description: 'Updated order with new status' })
   updateStatus(@Param('id') id: string, @Body() dto: UpdateOrderStatusDto) {
-    return this.model
-      .findByIdAndUpdate(new Types.ObjectId(id), { status: dto.status }, { new: true })
-      .lean();
+    return this.ordersService.updateOrderStatus(id, dto.status);
   }
 }
