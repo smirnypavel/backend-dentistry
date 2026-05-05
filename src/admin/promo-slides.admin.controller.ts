@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -90,6 +91,10 @@ class CreatePromoSlideDto {
   @Type(() => Boolean)
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsString()
+  slot?: string;
 }
 
 class UpdatePromoSlideDto extends CreatePromoSlideDto {
@@ -118,10 +123,11 @@ export class AdminPromoSlidesController {
   ) {}
 
   @Get()
-  @ApiOperation({ summary: 'List all promo slides (sorted)' })
+  @ApiOperation({ summary: 'List promo slides filtered by slot (sorted)' })
   @ApiOkResponse({ description: 'Array of promo slides' })
-  async list() {
-    return this.model.find().sort({ sortOrder: 1, createdAt: -1 }).lean();
+  async list(@Query('slot') slot?: string) {
+    const filter = slot ? { slot } : {};
+    return this.model.find(filter).sort({ sortOrder: 1, createdAt: -1 }).lean();
   }
 
   @Get(':id')
@@ -155,6 +161,7 @@ export class AdminPromoSlidesController {
       linkUrl: dto.linkUrl,
       sortOrder: dto.sortOrder,
       isActive: dto.isActive ?? true,
+      slot: dto.slot ?? 'slider',
     });
   }
 

@@ -48,6 +48,9 @@ export class PromoSlide {
 
   @Prop({ type: Boolean, default: true })
   isActive!: boolean;
+
+  @Prop({ type: String, enum: ['slider', 'grid'], default: 'slider' })
+  slot!: 'slider' | 'grid';
 }
 
 export const PromoSlideSchema = SchemaFactory.createForClass(PromoSlide);

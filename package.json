@@ -13,6 +13,7 @@
     "seed": "ts-node ./scripts/seed.ts",
     "seed:products:fixed": "ts-node ./scripts/seed-products-fixed.ts",
     "seed:orders": "ts-node ./scripts/seed-orders.ts",
+    "seed:promo-slides": "ts-node ./scripts/seed-promo-slides.ts",
     "seed:real": "ts-node ./scripts/seed-real-products.ts"
   },
   "dependencies": {
