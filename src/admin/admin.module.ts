@@ -36,6 +36,7 @@ import { AdminReviewsController } from './reviews.admin.controller';
 import { ReviewsModule } from '../reviews/reviews.module';
 import { PagesModule } from '../company/pages/pages.module';
 import { AdminPagesController } from './pages.admin.controller';
+import { AdminMediaController } from './media.admin.controller';
 import { OrdersModule } from '../orders/orders.module';
 
 @Module({
@@ -79,6 +80,7 @@ import { OrdersModule } from '../orders/orders.module';
     AdminPromoSlidesController,
     AdminReviewsController,
     AdminPagesController,
+    AdminMediaController,
   ],
   providers: [UploadsService, AdminGuard],
 })
