@@ -45,9 +45,17 @@ export class Hero {
   @Prop({ type: String, required: false, default: undefined })
   videoUrl?: string; // Optional video
 
-  // CTA
+  // CTA primary
   @Prop({ type: CtaLink, required: false })
   cta?: CtaLink;
+
+  // CTA secondary (second button)
+  @Prop({ type: CtaLink, required: false })
+  cta2?: CtaLink;
+
+  // Trust bullets (short bullet points shown under subtitle)
+  @Prop({ type: [String], default: [] })
+  bullets!: string[];
 
   // Presentation
   @Prop({ type: String, enum: ['light', 'dark'], default: 'light' })

@@ -4,7 +4,7 @@ import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiSecurity, ApiTags } from
 import { Model, Types } from 'mongoose';
 import { AdminGuard } from './admin.guard';
 import { Hero, HeroDocument } from '../company/hero/hero.schema';
-import { IsBoolean, IsEnum, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsBoolean, IsEnum, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class I18nTextOptionalDto {
@@ -62,6 +62,16 @@ class CreateHeroDto {
   cta?: CtaDto;
 
   @IsOptional()
+  @ValidateNested()
+  @Type(() => CtaDto)
+  cta2?: CtaDto;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  bullets?: string[];
+
+  @IsOptional()
   @IsEnum(['light', 'dark'])
   theme?: 'light' | 'dark';
 
@@ -110,6 +120,8 @@ export class AdminHeroController {
       imageUrlMobile: dto.imageUrlMobile,
       videoUrl: dto.videoUrl,
       cta: dto.cta ? { external: false, ...dto.cta } : undefined,
+      cta2: dto.cta2 ? { external: false, ...dto.cta2 } : undefined,
+      bullets: dto.bullets ?? [],
       theme: dto.theme ?? 'light',
       isActive: dto.isActive ?? false,
     });
