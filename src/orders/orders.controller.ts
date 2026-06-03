@@ -142,7 +142,11 @@ export class OrdersController {
       return undefined;
     }
 
-    const customer = await this.customerAuthService.verifyAccessToken(token);
-    return customer._id.toString();
+    try {
+      const customer = await this.customerAuthService.verifyAccessToken(token);
+      return customer._id.toString();
+    } catch {
+      return undefined;
+    }
   }
 }
