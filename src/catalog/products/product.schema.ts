@@ -88,6 +88,10 @@ export class Product {
   @Prop({ type: MongooseSchema.Types.Mixed, default: {} })
   optionsSummary?: Record<string, Array<string | number>>;
 
+  /** SKU of the variant whose price is shown in the catalog / as the default on the product page. */
+  @Prop({ trim: true })
+  defaultVariantSku?: string;
+
   @Prop({ type: Boolean, default: true })
   isActive!: boolean;
 

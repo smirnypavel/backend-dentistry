@@ -381,6 +381,11 @@ class CreateProductDto {
   @IsOptional()
   @IsNumber()
   cashbackPercent?: number;
+
+  @ApiPropertyOptional({ description: 'SKU of the variant whose price is shown in the catalog' })
+  @IsOptional()
+  @IsString()
+  defaultVariantSku?: string;
 }
 
 class UpdateProductDto {
@@ -450,6 +455,11 @@ class UpdateProductDto {
   @IsOptional()
   @IsNumber()
   cashbackPercent?: number;
+
+  @ApiPropertyOptional({ description: 'SKU of the variant whose price is shown in the catalog' })
+  @IsOptional()
+  @IsString()
+  defaultVariantSku?: string;
 }
 
 function toObjectId(id?: string): Types.ObjectId | undefined {
@@ -474,6 +484,8 @@ function mapDtoToDoc(dto: CreateProductDto | UpdateProductDto): Partial<Product>
   if ('isActive' in dto && dto.isActive !== undefined) mapped.isActive = dto.isActive as never;
   if ('cashbackPercent' in dto && dto.cashbackPercent !== undefined)
     mapped.cashbackPercent = dto.cashbackPercent as never;
+  if ('defaultVariantSku' in dto && dto.defaultVariantSku !== undefined)
+    mapped.defaultVariantSku = (dto.defaultVariantSku || undefined) as never;
 
   if ('variants' in dto && dto.variants !== undefined) {
     mapped.variants = (dto.variants ?? []).map((v) => ({
