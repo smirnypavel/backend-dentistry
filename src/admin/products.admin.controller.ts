@@ -1468,9 +1468,15 @@ export class AdminProductsController {
       },
       descriptionI18n: doc.descriptionI18n ? { ...doc.descriptionI18n } : undefined,
       categoryIds: [...(doc.categoryIds ?? [])],
+      subcategoryIds: [...(doc.subcategoryIds ?? [])],
       tags: [...(doc.tags ?? [])],
       images: [...(doc.images ?? [])],
       attributes: [...(doc.attributes ?? [])],
+      cashbackPercent: doc.cashbackPercent ?? 0,
+      isNew: doc.isNew ?? false,
+      defaultVariantSku: skuSuffix
+        ? (doc.defaultVariantSku ? `${doc.defaultVariantSku}${skuSuffix}` : undefined)
+        : doc.defaultVariantSku,
       variants: (doc.variants ?? []).map((v) => ({
         sku: skuSuffix ? `${v.sku}${skuSuffix}` : v.sku,
         manufacturerId: v.manufacturerId,
