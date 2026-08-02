@@ -1034,6 +1034,28 @@ export class AdminProductsController {
     return doc.toObject();
   }
 
+  @Patch('reorder')
+  @ApiOperation({ summary: 'Set manual product order within a category' })
+  @ApiOkResponse({ description: 'Number of updated products' })
+  async reorder(@Body() body: { categoryId?: string; orderedIds?: string[] }) {
+    const categoryId = String(body?.categoryId ?? '').trim();
+    const ids = Array.isArray(body?.orderedIds) ? body.orderedIds : [];
+    if (!categoryId || !ids.length) {
+      throw new BadRequestException('categoryId and orderedIds are required');
+    }
+    const ops = ids
+      .filter((id) => Types.ObjectId.isValid(id))
+      .map((id, idx) => ({
+        updateOne: {
+          filter: { _id: new Types.ObjectId(id) },
+          update: { $set: { [`categoryOrder.${categoryId}`]: idx + 1 } },
+        },
+      }));
+    if (!ops.length) return { updated: 0 };
+    const res = await this.model.bulkWrite(ops);
+    return { updated: res.modifiedCount ?? ops.length };
+  }
+
   @Patch(':id')
   @ApiOperation({ summary: 'Update product (recomputes aggregates)' })
   @ApiOkResponse({ description: 'Updated product' })

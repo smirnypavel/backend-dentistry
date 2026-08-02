@@ -92,6 +92,10 @@ export class Product {
   @Prop({ trim: true })
   defaultVariantSku?: string;
 
+  /** Manual sort position per category: { [categoryId]: position }. Lower = higher in the list. */
+  @Prop({ type: MongooseSchema.Types.Mixed, default: {} })
+  categoryOrder?: Record<string, number>;
+
   @Prop({ type: Boolean, default: true })
   isActive!: boolean;
 
