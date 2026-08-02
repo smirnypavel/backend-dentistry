@@ -70,4 +70,14 @@ export class AdminMediaController {
     if (!path) throw new BadRequestException('path is required');
     return this.uploads.deleteFolder(path);
   }
+
+  /** Move a file to another folder */
+  @Post('files/move')
+  @ApiOperation({ summary: 'Move a file to another Cloudinary folder' })
+  async moveFile(@Body() dto: { publicId?: string; folder?: string }) {
+    const publicId = String(dto?.publicId ?? '').trim();
+    if (!publicId) throw new BadRequestException('publicId is required');
+    const folder = String(dto?.folder ?? '').trim();
+    return this.uploads.moveFile(publicId, folder);
+  }
 }

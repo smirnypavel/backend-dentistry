@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 import path from 'node:path';
 
@@ -89,6 +89,23 @@ export class UploadsService {
     this.ensureConfigured();
     const res: unknown = await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
     return { result: (res as { result?: string }).result ?? 'ok' };
+  }
+
+  /** Move a file to another folder (Cloudinary rename changes its public_id/folder). */
+  async moveFile(publicId: string, targetFolder?: string): Promise<CloudinaryFile> {
+    this.ensureConfigured();
+    const fileName = publicId.split('/').pop() as string;
+    const folder = (targetFolder ?? '').replace(/^\/+|\/+$/g, '');
+    const toPublicId = folder ? `${folder}/${fileName}` : fileName;
+    if (toPublicId === publicId) {
+      throw new BadRequestException('File is already in this folder');
+    }
+    const res: unknown = await cloudinary.uploader.rename(publicId, toPublicId, {
+      resource_type: 'image',
+      overwrite: false,
+      invalidate: true,
+    });
+    return res as CloudinaryFile;
   }
 
   async listFolders(prefix?: string): Promise<{ folders: CloudinaryFolder[] }> {
