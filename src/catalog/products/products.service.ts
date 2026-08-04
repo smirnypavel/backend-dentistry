@@ -143,6 +143,9 @@ export class ProductsService {
     } else {
       sortObj = this.parseSort(sort);
     }
+    // Unique tiebreaker → deterministic, stable pagination (no duplicates
+    // across pages when the primary sort keys tie).
+    if (!('_id' in sortObj)) sortObj._id = -1;
 
     const finalFilter: ProductFilter = andClauses.length
       ? { $and: [filter, ...andClauses] }
