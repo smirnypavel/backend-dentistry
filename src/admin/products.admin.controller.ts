@@ -873,7 +873,21 @@ export class AdminProductsController {
   })
   async findAll(@Query() query: AdminListProductsQueryDto) {
     const { q, qLike, page = 1, limit = 20 } = query;
-    const sortSpec = parseSort(query.sort) ?? { createdAt: -1 };
+    // "order" sort → manual per-category order (matches the storefront & the
+    // reorder drawer) when a category is selected; otherwise newest first.
+    const catIdForSort =
+      query.category && Types.ObjectId.isValid(query.category)
+        ? new Types.ObjectId(query.category)
+        : null;
+    let sortSpec: Record<string, 1 | -1>;
+    if (query.sort === 'order' || !query.sort) {
+      sortSpec = catIdForSort
+        ? { [`categoryOrder.${catIdForSort.toString()}`]: 1, createdAt: -1, _id: -1 }
+        : { createdAt: -1, _id: -1 };
+    } else {
+      sortSpec = parseSort(query.sort) ?? { createdAt: -1 };
+      if (!('_id' in sortSpec)) sortSpec._id = -1;
+    }
     const filter: Record<string, unknown> = {};
     const andClauses: Record<string, unknown>[] = [];
     if (q) filter.$text = { $search: q };
