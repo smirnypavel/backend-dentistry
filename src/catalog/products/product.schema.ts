@@ -96,6 +96,10 @@ export class Product {
   @Prop({ type: MongooseSchema.Types.Mixed, default: {} })
   categoryOrder?: Record<string, number>;
 
+  /** Manual sort position per subcategory: { [subcategoryId]: position }. */
+  @Prop({ type: MongooseSchema.Types.Mixed, default: {} })
+  subcategoryOrder?: Record<string, number>;
+
   @Prop({ type: Boolean, default: true })
   isActive!: boolean;
 

@@ -875,14 +875,23 @@ export class AdminProductsController {
     const { q, qLike, page = 1, limit = 20 } = query;
     // "order" sort → manual per-category order (matches the storefront & the
     // reorder drawer) when a category is selected; otherwise newest first.
+    const subIdForSort =
+      query.subcategory && Types.ObjectId.isValid(query.subcategory)
+        ? new Types.ObjectId(query.subcategory)
+        : null;
     const catIdForSort =
       query.category && Types.ObjectId.isValid(query.category)
         ? new Types.ObjectId(query.category)
         : null;
+    const orderField = subIdForSort
+      ? `subcategoryOrder.${subIdForSort.toString()}`
+      : catIdForSort
+        ? `categoryOrder.${catIdForSort.toString()}`
+        : null;
     let sortSpec: Record<string, 1 | -1>;
     if (query.sort === 'order' || !query.sort) {
-      sortSpec = catIdForSort
-        ? { [`categoryOrder.${catIdForSort.toString()}`]: 1, createdAt: -1, _id: -1 }
+      sortSpec = orderField
+        ? { [orderField]: 1, createdAt: -1, _id: -1 }
         : { createdAt: -1, _id: -1 };
     } else {
       sortSpec = parseSort(query.sort) ?? { createdAt: -1 };
@@ -1049,20 +1058,32 @@ export class AdminProductsController {
   }
 
   @Patch('reorder')
-  @ApiOperation({ summary: 'Set manual product order within a category' })
+  @ApiOperation({ summary: 'Set manual product order within a category or subcategory' })
   @ApiOkResponse({ description: 'Number of updated products' })
-  async reorder(@Body() body: { categoryId?: string; orderedIds?: string[] }) {
+  async reorder(
+    @Body()
+    body: { categoryId?: string; subcategoryId?: string; orderedIds?: string[] },
+  ) {
+    const subcategoryId = String(body?.subcategoryId ?? '').trim();
     const categoryId = String(body?.categoryId ?? '').trim();
     const ids = Array.isArray(body?.orderedIds) ? body.orderedIds : [];
-    if (!categoryId || !ids.length) {
-      throw new BadRequestException('categoryId and orderedIds are required');
+    // Order within a subcategory if given, otherwise within the category
+    const field = subcategoryId
+      ? `subcategoryOrder.${subcategoryId}`
+      : categoryId
+        ? `categoryOrder.${categoryId}`
+        : null;
+    if (!field || !ids.length) {
+      throw new BadRequestException(
+        'categoryId (or subcategoryId) and orderedIds are required',
+      );
     }
     const ops = ids
       .filter((id) => Types.ObjectId.isValid(id))
       .map((id, idx) => ({
         updateOne: {
           filter: { _id: new Types.ObjectId(id) },
-          update: { $set: { [`categoryOrder.${categoryId}`]: idx + 1 } },
+          update: { $set: { [field]: idx + 1 } },
         },
       }));
     if (!ops.length) return { updated: 0 };

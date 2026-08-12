@@ -134,12 +134,15 @@ export class ProductsService {
     // Manual per-category order: applies when browsing a category with the
     // default ("order"/-createdAt) sort. Products without a position sort last.
     let sortObj: Record<string, 1 | -1>;
+    const subIdForSort = subcategory ? this.toObjectIdOrNull(subcategory) : null;
     const catIdForSort = category ? this.toObjectIdOrNull(category) : null;
-    if (catIdForSort && (sort === 'order' || !sort)) {
-      sortObj = {
-        [`categoryOrder.${String(catIdForSort)}`]: 1,
-        createdAt: -1,
-      } as Record<string, 1 | -1>;
+    const orderField = subIdForSort
+      ? `subcategoryOrder.${String(subIdForSort)}`
+      : catIdForSort
+        ? `categoryOrder.${String(catIdForSort)}`
+        : null;
+    if (orderField && (sort === 'order' || !sort)) {
+      sortObj = { [orderField]: 1, createdAt: -1 } as Record<string, 1 | -1>;
     } else {
       sortObj = this.parseSort(sort);
     }
