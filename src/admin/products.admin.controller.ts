@@ -357,6 +357,12 @@ class CreateProductDto {
   @IsString({ each: true })
   images?: string[];
 
+  @ApiPropertyOptional({ type: [String], description: 'Video URLs' })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  videos?: string[];
+
   @ApiPropertyOptional({ type: [ProductAttributeDto] })
   @IsOptional()
   attributes?: { key: string; value: Mixed }[];
@@ -430,6 +436,12 @@ class UpdateProductDto {
   @IsString({ each: true })
   images?: string[];
 
+  @ApiPropertyOptional({ type: [String], description: 'Video URLs' })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  videos?: string[];
+
   @ApiPropertyOptional({ type: [ProductAttributeDto] })
   @IsOptional()
   attributes?: { key: string; value: Mixed }[];
@@ -479,6 +491,7 @@ function mapDtoToDoc(dto: CreateProductDto | UpdateProductDto): Partial<Product>
     mapped.subcategoryIds = (dto.subcategoryIds ?? []).map((id) => new Types.ObjectId(id));
   if ('tags' in dto && dto.tags !== undefined) mapped.tags = dto.tags as never;
   if ('images' in dto && dto.images !== undefined) mapped.images = dto.images as never;
+  if ('videos' in dto && dto.videos !== undefined) mapped.videos = dto.videos as never;
   if ('attributes' in dto && dto.attributes !== undefined)
     mapped.attributes = dto.attributes as never;
   if ('isActive' in dto && dto.isActive !== undefined) mapped.isActive = dto.isActive as never;

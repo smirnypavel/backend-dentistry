@@ -101,6 +101,36 @@ export class AdminUploadsController {
     return res; // { url, secure_url, public_id, width, height, format }
   }
 
+  @Post('video')
+  @ApiOperation({ summary: 'Upload video to Cloudinary' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' },
+        folder: { type: 'string', example: 'products/videos' },
+      },
+      required: ['file'],
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 100 * 1024 * 1024 }, // 100 MB
+    }),
+  )
+  @ApiOkResponse({ type: UploadImageResponseDto })
+  async uploadVideo(@UploadedFile() file: unknown, @Body() body?: UploadImageBodyDto) {
+    if (!isMulterFile(file)) throw new BadRequestException('File is required');
+    const f = file;
+    const buffer: Buffer | undefined = (f.buffer as unknown as Buffer) ?? undefined;
+    const originalname: string = String(f.originalname);
+    if (!buffer) throw new BadRequestException('File is required');
+    const folder = body?.folder ? String(body.folder).replace(/\/+$/g, '') : 'products/videos';
+    return this.uploads.uploadVideo(buffer, originalname, folder);
+  }
+
   @Post('image/delete')
   @ApiOperation({ summary: 'Delete image from Cloudinary by public_id' })
   @ApiBody({

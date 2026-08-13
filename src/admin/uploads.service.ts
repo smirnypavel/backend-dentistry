@@ -85,6 +85,24 @@ export class UploadsService {
     return { url: res.url, secure_url: res.secure_url, public_id: res.public_id, width: res.width, height: res.height, format: res.format };
   }
 
+  /** Upload a video file to Cloudinary (resource_type: 'video'). */
+  async uploadVideo(buffer: Buffer, filename?: string, folder?: string): Promise<UploadedImage> {
+    this.ensureConfigured();
+    const publicId = filename ? path.parse(filename).name : undefined;
+    const res = await new Promise<UploadApiResponse>((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: folder || 'videos', resource_type: 'video', public_id: publicId },
+        (error: unknown, result?: UploadApiResponse) => {
+          if (error) return reject(error instanceof Error ? error : new Error('Cloudinary video upload error'));
+          if (!result) return reject(new Error('Video upload failed: empty result'));
+          return resolve(result);
+        },
+      );
+      stream.end(buffer);
+    });
+    return { url: res.url, secure_url: res.secure_url, public_id: res.public_id, width: res.width, height: res.height, format: res.format };
+  }
+
   async delete(publicId: string): Promise<{ result: string }> {
     this.ensureConfigured();
     const res: unknown = await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });

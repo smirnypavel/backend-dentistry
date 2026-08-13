@@ -66,6 +66,9 @@ export class Product {
   @Prop({ type: [String], default: [] })
   images?: string[];
 
+  @Prop({ type: [String], default: [] })
+  videos?: string[];
+
   @Prop({ type: [{ key: { type: String }, value: MongooseSchema.Types.Mixed }], default: [] })
   attributes?: { key: string; value: string | number | boolean }[];
 
