@@ -482,6 +482,7 @@ function mapDtoToDoc(dto: CreateProductDto | UpdateProductDto): Partial<Product>
   if ('attributes' in dto && dto.attributes !== undefined)
     mapped.attributes = dto.attributes as never;
   if ('isActive' in dto && dto.isActive !== undefined) mapped.isActive = dto.isActive as never;
+  if ('isNew' in dto && dto.isNew !== undefined) mapped.isNew = dto.isNew as never;
   if ('cashbackPercent' in dto && dto.cashbackPercent !== undefined)
     mapped.cashbackPercent = dto.cashbackPercent as never;
   if ('defaultVariantSku' in dto && dto.defaultVariantSku !== undefined)
