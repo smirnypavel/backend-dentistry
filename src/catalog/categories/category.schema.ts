@@ -20,6 +20,10 @@ export class Category {
   @Prop({ trim: true })
   imageUrl?: string;
 
+  // Bento card size on the catalog landing page: large (2×2), wide (2×1), tall (1×2), normal (1×1)
+  @Prop({ type: String, enum: ['large', 'wide', 'tall', 'normal'] })
+  cardSize?: string;
+
   @Prop({ type: Number, default: 0 })
   sort?: number;
 

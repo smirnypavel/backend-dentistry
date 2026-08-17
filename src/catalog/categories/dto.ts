@@ -1,5 +1,6 @@
 import {
   IsBoolean,
+  IsIn,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -61,6 +62,10 @@ export class CreateCategoryDto {
   @IsOptional()
   imageUrl?: string;
 
+  @IsOptional()
+  @IsIn(['large', 'wide', 'tall', 'normal'])
+  cardSize?: string;
+
   @IsInt()
   @Min(0)
   @IsOptional()
@@ -92,6 +97,10 @@ export class UpdateCategoryDto {
   @IsString()
   @IsOptional()
   imageUrl?: string;
+
+  @IsOptional()
+  @IsIn(['large', 'wide', 'tall', 'normal'])
+  cardSize?: string;
 
   @IsInt()
   @Min(0)
