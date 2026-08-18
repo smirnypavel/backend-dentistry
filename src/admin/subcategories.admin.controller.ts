@@ -29,10 +29,13 @@ export class AdminSubcategoriesController {
   @Post()
   @ApiOperation({ summary: 'Create subcategory' })
   create(@Body() dto: CreateSubcategoryDto) {
-    const data = {
+    const data: Record<string, unknown> = {
       ...dto,
       categoryId: new Types.ObjectId(dto.categoryId),
     };
+    data.parentSubcategoryId = dto.parentSubcategoryId
+      ? new Types.ObjectId(dto.parentSubcategoryId)
+      : null;
     return this.model.create(data);
   }
 
@@ -41,6 +44,11 @@ export class AdminSubcategoriesController {
   update(@Param('id') id: string, @Body() dto: UpdateSubcategoryDto) {
     const patch: Record<string, unknown> = { ...dto };
     if (dto.categoryId) patch.categoryId = new Types.ObjectId(dto.categoryId);
+    if (dto.parentSubcategoryId !== undefined) {
+      patch.parentSubcategoryId = dto.parentSubcategoryId
+        ? new Types.ObjectId(dto.parentSubcategoryId)
+        : null;
+    }
     return this.model.findByIdAndUpdate(new Types.ObjectId(id), patch, { new: true }).lean();
   }
 

@@ -64,6 +64,11 @@ export class CreateSubcategoryDto {
   @IsNotEmpty()
   categoryId!: string;
 
+  // Empty string / absent = top-level. Otherwise the parent subcategory id.
+  @IsString()
+  @IsOptional()
+  parentSubcategoryId?: string;
+
   @IsInt()
   @Min(0)
   @IsOptional()
@@ -98,6 +103,10 @@ export class UpdateSubcategoryDto {
   @IsString()
   @IsOptional()
   categoryId?: string;
+
+  @IsString()
+  @IsOptional()
+  parentSubcategoryId?: string;
 
   @IsInt()
   @Min(0)

@@ -138,6 +138,7 @@ const DEFAULTS: Record<string, Record<string, unknown>> = {
     sectionTitle: 'Акційні пропозиції',
     countdownLabel: 'До кінця акції',
     countdownSublabel: 'Встигніть замовити!',
+    countdownEndAt: '',
     priceLabel: 'Акційна ціна',
     orderBtnText: 'Замовити зараз',
     detailsBtnText: 'Деталі',

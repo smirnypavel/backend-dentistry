@@ -23,6 +23,11 @@ export class Subcategory {
   @Prop({ type: Types.ObjectId, required: true, ref: 'Category' })
   categoryId!: Types.ObjectId;
 
+  // Optional parent subcategory — makes this a 3rd-level "підгрупа" (sub-subcategory).
+  // Null/absent = top-level subcategory directly under the category.
+  @Prop({ type: Types.ObjectId, ref: 'Subcategory', default: null })
+  parentSubcategoryId?: Types.ObjectId | null;
+
   @Prop({ type: Number, default: 0 })
   sort?: number;
 
@@ -33,5 +38,6 @@ export class Subcategory {
 export const SubcategorySchema = SchemaFactory.createForClass(Subcategory);
 SubcategorySchema.index({ slug: 1 }, { unique: true });
 SubcategorySchema.index({ categoryId: 1, isActive: 1, sort: 1 });
+SubcategorySchema.index({ parentSubcategoryId: 1, isActive: 1, sort: 1 });
 SubcategorySchema.index({ isActive: 1, sort: 1 });
 SubcategorySchema.index({ 'nameI18n.uk': 1 });
