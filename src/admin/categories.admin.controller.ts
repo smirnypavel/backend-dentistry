@@ -29,13 +29,23 @@ export class AdminCategoriesController {
   @Post()
   @ApiOperation({ summary: 'Create category' })
   create(@Body() dto: CreateCategoryDto) {
-    return this.model.create(dto);
+    const data: Record<string, unknown> = { ...dto };
+    if (dto.relatedProductIds !== undefined)
+      data.relatedProductIds = (dto.relatedProductIds ?? []).map(
+        (id) => new Types.ObjectId(id),
+      );
+    return this.model.create(data);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update category' })
   update(@Param('id') id: string, @Body() dto: UpdateCategoryDto) {
-    return this.model.findByIdAndUpdate(new Types.ObjectId(id), dto, { new: true }).lean();
+    const patch: Record<string, unknown> = { ...dto };
+    if (dto.relatedProductIds !== undefined)
+      patch.relatedProductIds = (dto.relatedProductIds ?? []).map(
+        (rid) => new Types.ObjectId(rid),
+      );
+    return this.model.findByIdAndUpdate(new Types.ObjectId(id), patch, { new: true }).lean();
   }
 
   @Delete(':id')

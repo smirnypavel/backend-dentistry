@@ -392,6 +392,12 @@ class CreateProductDto {
   @IsOptional()
   @IsString()
   defaultVariantSku?: string;
+
+  @ApiPropertyOptional({ type: [String], description: 'Manually curated recommended product ObjectIds' })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  relatedProductIds?: string[];
 }
 
 class UpdateProductDto {
@@ -472,6 +478,12 @@ class UpdateProductDto {
   @IsOptional()
   @IsString()
   defaultVariantSku?: string;
+
+  @ApiPropertyOptional({ type: [String], description: 'Manually curated recommended product ObjectIds' })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  relatedProductIds?: string[];
 }
 
 function toObjectId(id?: string): Types.ObjectId | undefined {
@@ -500,6 +512,10 @@ function mapDtoToDoc(dto: CreateProductDto | UpdateProductDto): Partial<Product>
     mapped.cashbackPercent = dto.cashbackPercent as never;
   if ('defaultVariantSku' in dto && dto.defaultVariantSku !== undefined)
     mapped.defaultVariantSku = (dto.defaultVariantSku || undefined) as never;
+  if ('relatedProductIds' in dto && dto.relatedProductIds !== undefined)
+    mapped.relatedProductIds = (dto.relatedProductIds ?? []).map(
+      (id) => new Types.ObjectId(id),
+    ) as never;
 
   if ('variants' in dto && dto.variants !== undefined) {
     mapped.variants = (dto.variants ?? []).map((v) => ({
@@ -541,6 +557,13 @@ class AdminListProductsQueryDto {
   @IsOptional()
   @IsString()
   qLike?: string;
+
+  @ApiPropertyOptional({ type: [String], description: 'Specific product ObjectIds (any of)' })
+  @IsOptional()
+  @Type(() => String)
+  @IsArray()
+  @IsString({ each: true })
+  ids?: string[];
 
   @ApiPropertyOptional({ description: 'Category ID (ObjectId)' })
   @IsOptional()
@@ -928,6 +951,12 @@ export class AdminProductsController {
       });
     }
     if (query.isActive !== undefined) filter.isActive = !!query.isActive;
+    if (query.ids?.length) {
+      const objIds = query.ids
+        .filter((id) => Types.ObjectId.isValid(id))
+        .map((id) => new Types.ObjectId(id));
+      filter._id = { $in: objIds.length ? objIds : [new Types.ObjectId()] };
+    }
     if (query.category) filter.categoryIds = new Types.ObjectId(query.category);
     if (query.subcategory) filter.subcategoryIds = new Types.ObjectId(query.subcategory);
     if (query.manufacturerId?.length)

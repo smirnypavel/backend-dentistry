@@ -118,6 +118,11 @@ export class Product {
   /** Cashback percentage for this product (0 = none, e.g. 5 = 5%) */
   @Prop({ type: Number, default: 0, min: 0, max: 100 })
   cashbackPercent!: number;
+
+  /** Manually curated recommended products shown on this product's page.
+   *  Takes priority over subcategory/category-level defaults. */
+  @Prop({ type: [Types.ObjectId], ref: 'Product', default: [] })
+  relatedProductIds!: Types.ObjectId[];
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);

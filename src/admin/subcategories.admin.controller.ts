@@ -36,6 +36,10 @@ export class AdminSubcategoriesController {
     data.parentSubcategoryId = dto.parentSubcategoryId
       ? new Types.ObjectId(dto.parentSubcategoryId)
       : null;
+    if (dto.relatedProductIds !== undefined)
+      data.relatedProductIds = (dto.relatedProductIds ?? []).map(
+        (id) => new Types.ObjectId(id),
+      );
     return this.model.create(data);
   }
 
@@ -48,6 +52,11 @@ export class AdminSubcategoriesController {
       patch.parentSubcategoryId = dto.parentSubcategoryId
         ? new Types.ObjectId(dto.parentSubcategoryId)
         : null;
+    }
+    if (dto.relatedProductIds !== undefined) {
+      patch.relatedProductIds = (dto.relatedProductIds ?? []).map(
+        (rid) => new Types.ObjectId(rid),
+      );
     }
     return this.model.findByIdAndUpdate(new Types.ObjectId(id), patch, { new: true }).lean();
   }

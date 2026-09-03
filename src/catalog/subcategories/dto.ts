@@ -1,4 +1,5 @@
 import {
+  IsArray,
   IsBoolean,
   IsInt,
   IsNotEmpty,
@@ -77,6 +78,11 @@ export class CreateSubcategoryDto {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  relatedProductIds?: string[];
 }
 
 export class UpdateSubcategoryDto {
@@ -116,4 +122,9 @@ export class UpdateSubcategoryDto {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  relatedProductIds?: string[];
 }

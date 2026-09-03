@@ -8,6 +8,7 @@ import { AppliedDiscountInfo } from '../../discounts/discount.schema';
 export interface ProductQuery {
   q?: string;
   qLike?: string;
+  ids?: string[];
   category?: string;
   subcategory?: string;
   manufacturerId?: string | string[];
@@ -32,6 +33,7 @@ export class ProductsService {
     const {
       q,
       qLike,
+      ids,
       category,
       subcategory,
       manufacturerId,
@@ -79,6 +81,14 @@ export class ProductsService {
     if (subcategory) {
       const subId = this.toObjectIdOrNull(subcategory);
       if (subId) filter.subcategoryIds = subId;
+    }
+
+    if (ids && ids.length) {
+      const objIds = ids
+        .map((id) => this.toObjectIdOrNull(id))
+        .filter((id): id is Types.ObjectId => !!id);
+      // Match nothing if all ids were invalid, so callers get an empty list.
+      filter._id = { $in: objIds.length ? objIds : [new Types.ObjectId()] };
     }
 
     const toArray = (v?: string | string[]) => (Array.isArray(v) ? v : v ? [v] : []);

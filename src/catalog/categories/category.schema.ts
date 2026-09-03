@@ -1,5 +1,5 @@
 import { Schema, SchemaFactory, Prop } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
+import { HydratedDocument, Types } from 'mongoose';
 
 export type CategoryDocument = HydratedDocument<Category>;
 
@@ -29,6 +29,11 @@ export class Category {
 
   @Prop({ type: Boolean, default: true })
   isActive!: boolean;
+
+  /** Default recommended products for items in this category (fallback when a
+   *  product has no own recommendations). */
+  @Prop({ type: [Types.ObjectId], ref: 'Product', default: [] })
+  relatedProductIds?: Types.ObjectId[];
 }
 
 export const CategorySchema = SchemaFactory.createForClass(Category);

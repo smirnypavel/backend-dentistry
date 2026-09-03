@@ -33,6 +33,11 @@ export class Subcategory {
 
   @Prop({ type: Boolean, default: true })
   isActive!: boolean;
+
+  /** Default recommended products for items in this subcategory (fallback when
+   *  a product has no own recommendations). Overrides category-level defaults. */
+  @Prop({ type: [Types.ObjectId], ref: 'Product', default: [] })
+  relatedProductIds?: Types.ObjectId[];
 }
 
 export const SubcategorySchema = SchemaFactory.createForClass(Subcategory);

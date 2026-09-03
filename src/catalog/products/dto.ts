@@ -31,6 +31,15 @@ export class FindProductsQueryDto {
   @IsString()
   qLike?: string;
 
+  @ApiPropertyOptional({ type: [String], description: 'Fetch specific product ObjectIds (any of)' })
+  @IsOptional()
+  @Transform(({ value }: TransformFnParams) =>
+    toArray<string>(value as string | string[] | null | undefined),
+  )
+  @IsArray()
+  @IsString({ each: true })
+  ids?: string[];
+
   @ApiPropertyOptional({ description: 'Category ID (ObjectId)' })
   @IsOptional()
   @IsString()
