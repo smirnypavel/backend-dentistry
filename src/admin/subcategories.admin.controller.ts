@@ -40,6 +40,14 @@ export class AdminSubcategoriesController {
       data.relatedProductIds = (dto.relatedProductIds ?? []).map(
         (id) => new Types.ObjectId(id),
       );
+    if (dto.relatedCategoryId !== undefined)
+      data.relatedCategoryId = dto.relatedCategoryId
+        ? new Types.ObjectId(dto.relatedCategoryId)
+        : null;
+    if (dto.relatedSubcategoryId !== undefined)
+      data.relatedSubcategoryId = dto.relatedSubcategoryId
+        ? new Types.ObjectId(dto.relatedSubcategoryId)
+        : null;
     return this.model.create(data);
   }
 
@@ -58,6 +66,14 @@ export class AdminSubcategoriesController {
         (rid) => new Types.ObjectId(rid),
       );
     }
+    if (dto.relatedCategoryId !== undefined)
+      patch.relatedCategoryId = dto.relatedCategoryId
+        ? new Types.ObjectId(dto.relatedCategoryId)
+        : null;
+    if (dto.relatedSubcategoryId !== undefined)
+      patch.relatedSubcategoryId = dto.relatedSubcategoryId
+        ? new Types.ObjectId(dto.relatedSubcategoryId)
+        : null;
     return this.model.findByIdAndUpdate(new Types.ObjectId(id), patch, { new: true }).lean();
   }
 

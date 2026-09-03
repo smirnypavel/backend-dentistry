@@ -123,6 +123,14 @@ export class Product {
    *  Takes priority over subcategory/category-level defaults. */
   @Prop({ type: [Types.ObjectId], ref: 'Product', default: [] })
   relatedProductIds!: Types.ObjectId[];
+
+  /** Alternative recommendation source: recommend all products of a category. */
+  @Prop({ type: Types.ObjectId, ref: 'Category', default: null })
+  relatedCategoryId?: Types.ObjectId | null;
+
+  /** Alternative recommendation source: recommend all products of a subcategory. */
+  @Prop({ type: Types.ObjectId, ref: 'Subcategory', default: null })
+  relatedSubcategoryId?: Types.ObjectId | null;
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);

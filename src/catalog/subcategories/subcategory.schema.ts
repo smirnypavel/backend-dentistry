@@ -38,6 +38,14 @@ export class Subcategory {
    *  a product has no own recommendations). Overrides category-level defaults. */
   @Prop({ type: [Types.ObjectId], ref: 'Product', default: [] })
   relatedProductIds?: Types.ObjectId[];
+
+  /** Alternative recommendation source: a whole category. */
+  @Prop({ type: Types.ObjectId, ref: 'Category', default: null })
+  relatedCategoryId?: Types.ObjectId | null;
+
+  /** Alternative recommendation source: a whole subcategory. */
+  @Prop({ type: Types.ObjectId, ref: 'Subcategory', default: null })
+  relatedSubcategoryId?: Types.ObjectId | null;
 }
 
 export const SubcategorySchema = SchemaFactory.createForClass(Subcategory);

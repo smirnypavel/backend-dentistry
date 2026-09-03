@@ -83,6 +83,14 @@ export class CreateSubcategoryDto {
   @IsArray()
   @IsString({ each: true })
   relatedProductIds?: string[];
+
+  @IsOptional()
+  @IsString()
+  relatedCategoryId?: string;
+
+  @IsOptional()
+  @IsString()
+  relatedSubcategoryId?: string;
 }
 
 export class UpdateSubcategoryDto {
@@ -127,4 +135,12 @@ export class UpdateSubcategoryDto {
   @IsArray()
   @IsString({ each: true })
   relatedProductIds?: string[];
+
+  @IsOptional()
+  @IsString()
+  relatedCategoryId?: string;
+
+  @IsOptional()
+  @IsString()
+  relatedSubcategoryId?: string;
 }

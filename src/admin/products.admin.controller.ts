@@ -398,6 +398,16 @@ class CreateProductDto {
   @IsArray()
   @IsString({ each: true })
   relatedProductIds?: string[];
+
+  @ApiPropertyOptional({ description: 'Recommend a whole category (ObjectId or empty)' })
+  @IsOptional()
+  @IsString()
+  relatedCategoryId?: string;
+
+  @ApiPropertyOptional({ description: 'Recommend a whole subcategory (ObjectId or empty)' })
+  @IsOptional()
+  @IsString()
+  relatedSubcategoryId?: string;
 }
 
 class UpdateProductDto {
@@ -484,6 +494,16 @@ class UpdateProductDto {
   @IsArray()
   @IsString({ each: true })
   relatedProductIds?: string[];
+
+  @ApiPropertyOptional({ description: 'Recommend a whole category (ObjectId or empty)' })
+  @IsOptional()
+  @IsString()
+  relatedCategoryId?: string;
+
+  @ApiPropertyOptional({ description: 'Recommend a whole subcategory (ObjectId or empty)' })
+  @IsOptional()
+  @IsString()
+  relatedSubcategoryId?: string;
 }
 
 function toObjectId(id?: string): Types.ObjectId | undefined {
@@ -516,6 +536,14 @@ function mapDtoToDoc(dto: CreateProductDto | UpdateProductDto): Partial<Product>
     mapped.relatedProductIds = (dto.relatedProductIds ?? []).map(
       (id) => new Types.ObjectId(id),
     ) as never;
+  if ('relatedCategoryId' in dto && dto.relatedCategoryId !== undefined)
+    mapped.relatedCategoryId = (dto.relatedCategoryId
+      ? new Types.ObjectId(dto.relatedCategoryId)
+      : null) as never;
+  if ('relatedSubcategoryId' in dto && dto.relatedSubcategoryId !== undefined)
+    mapped.relatedSubcategoryId = (dto.relatedSubcategoryId
+      ? new Types.ObjectId(dto.relatedSubcategoryId)
+      : null) as never;
 
   if ('variants' in dto && dto.variants !== undefined) {
     mapped.variants = (dto.variants ?? []).map((v) => ({
