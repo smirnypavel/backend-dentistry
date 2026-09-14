@@ -12,6 +12,16 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
+class ColorDto {
+  @IsString()
+  @IsNotEmpty()
+  name!: string;
+
+  @IsOptional()
+  @IsString()
+  hex?: string;
+}
+
 class I18nNameCreateDto {
   @IsString()
   @IsNotEmpty()
@@ -88,6 +98,12 @@ export class CreateCategoryDto {
   @IsOptional()
   @IsString()
   relatedSubcategoryId?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ColorDto)
+  colors?: ColorDto[];
 }
 
 export class UpdateCategoryDto {
@@ -137,4 +153,10 @@ export class UpdateCategoryDto {
   @IsOptional()
   @IsString()
   relatedSubcategoryId?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ColorDto)
+  colors?: ColorDto[];
 }

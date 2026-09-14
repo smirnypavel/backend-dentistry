@@ -42,6 +42,11 @@ export class Category {
   /** Alternative recommendation source: a whole subcategory. */
   @Prop({ type: Types.ObjectId, ref: 'Subcategory', default: null })
   relatedSubcategoryId?: Types.ObjectId | null;
+
+  /** Default selectable colours for products in this category/subcategory
+   *  (used when a product has no own colours). */
+  @Prop({ type: [{ name: { type: String, required: true }, hex: { type: String } }], default: [] })
+  colors?: { name: string; hex?: string }[];
 }
 
 export const CategorySchema = SchemaFactory.createForClass(Category);
