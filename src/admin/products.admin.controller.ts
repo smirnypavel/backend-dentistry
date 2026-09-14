@@ -282,6 +282,17 @@ class ProductAttributeDto {
   value!: Mixed;
 }
 
+class ProductColorDto {
+  @ApiProperty()
+  @IsString()
+  name!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  hex?: string;
+}
+
 class I18nTitleCreateDto {
   @ApiProperty()
   @IsString()
@@ -366,6 +377,13 @@ class CreateProductDto {
   @ApiPropertyOptional({ type: [ProductAttributeDto] })
   @IsOptional()
   attributes?: { key: string; value: Mixed }[];
+
+  @ApiPropertyOptional({ type: [ProductColorDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ProductColorDto)
+  colors?: { name: string; hex?: string }[];
 
   @ApiProperty({ type: [ProductVariantDto] })
   @IsArray()
@@ -462,6 +480,13 @@ class UpdateProductDto {
   @IsOptional()
   attributes?: { key: string; value: Mixed }[];
 
+  @ApiPropertyOptional({ type: [ProductColorDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ProductColorDto)
+  colors?: { name: string; hex?: string }[];
+
   @ApiPropertyOptional({ type: [ProductVariantDto] })
   @IsOptional()
   @IsArray()
@@ -526,6 +551,11 @@ function mapDtoToDoc(dto: CreateProductDto | UpdateProductDto): Partial<Product>
   if ('videos' in dto && dto.videos !== undefined) mapped.videos = dto.videos as never;
   if ('attributes' in dto && dto.attributes !== undefined)
     mapped.attributes = dto.attributes as never;
+  if ('colors' in dto && dto.colors !== undefined)
+    mapped.colors = (dto.colors ?? []).map((c) => ({
+      name: String(c.name || '').trim(),
+      ...(c.hex ? { hex: String(c.hex).trim() } : {}),
+    })).filter((c) => c.name) as never;
   if ('isActive' in dto && dto.isActive !== undefined) mapped.isActive = dto.isActive as never;
   if ('isNew' in dto && dto.isNew !== undefined) mapped.isNew = dto.isNew as never;
   if ('cashbackPercent' in dto && dto.cashbackPercent !== undefined)

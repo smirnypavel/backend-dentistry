@@ -72,6 +72,11 @@ export class Product {
   @Prop({ type: [{ key: { type: String }, value: MongooseSchema.Types.Mixed }], default: [] })
   attributes?: { key: string; value: string | number | boolean }[];
 
+  /** Selectable colours (e.g. for elastic ligatures/chains). Customer picks one
+   *  on the product page; the choice is carried into the order. */
+  @Prop({ type: [{ name: { type: String, required: true }, hex: { type: String } }], default: [] })
+  colors?: { name: string; hex?: string }[];
+
   @Prop({ type: [ProductVariantSchema], default: [] })
   variants!: ProductVariant[];
 
