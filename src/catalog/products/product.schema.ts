@@ -124,6 +124,13 @@ export class Product {
   @Prop({ type: Number, default: 0, min: 0, max: 100 })
   cashbackPercent!: number;
 
+  /** Optional interactive elastics matrix (ZOO-style): flat entries pivoted into
+   *  a size×force table on the product page. Shape:
+   *  { title?, entries: [{ group:'intra'|'extra', size, mm, forceName, oz, g,
+   *    level, animal, art, colorArt? }] } */
+  @Prop({ type: MongooseSchema.Types.Mixed, default: null })
+  elasticsTable?: Record<string, unknown> | null;
+
   /** Manually curated recommended products shown on this product's page.
    *  Takes priority over subcategory/category-level defaults. */
   @Prop({ type: [Types.ObjectId], ref: 'Product', default: [] })

@@ -426,6 +426,10 @@ class CreateProductDto {
   @IsOptional()
   @IsString()
   relatedSubcategoryId?: string;
+
+  @ApiPropertyOptional({ description: 'Interactive elastics matrix (ZOO-style) as flexible JSON' })
+  @IsOptional()
+  elasticsTable?: Record<string, unknown> | null;
 }
 
 class UpdateProductDto {
@@ -529,6 +533,10 @@ class UpdateProductDto {
   @IsOptional()
   @IsString()
   relatedSubcategoryId?: string;
+
+  @ApiPropertyOptional({ description: 'Interactive elastics matrix (ZOO-style) as flexible JSON' })
+  @IsOptional()
+  elasticsTable?: Record<string, unknown> | null;
 }
 
 function toObjectId(id?: string): Types.ObjectId | undefined {
@@ -574,6 +582,8 @@ function mapDtoToDoc(dto: CreateProductDto | UpdateProductDto): Partial<Product>
     mapped.relatedSubcategoryId = (dto.relatedSubcategoryId
       ? new Types.ObjectId(dto.relatedSubcategoryId)
       : null) as never;
+  if ('elasticsTable' in dto && dto.elasticsTable !== undefined)
+    mapped.elasticsTable = (dto.elasticsTable ?? null) as never;
 
   if ('variants' in dto && dto.variants !== undefined) {
     mapped.variants = (dto.variants ?? []).map((v) => ({
