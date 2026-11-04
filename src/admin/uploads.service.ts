@@ -70,7 +70,12 @@ export class UploadsService {
   async uploadBuffer(buffer: Buffer, filename?: string, folder?: string): Promise<UploadedImage> {
     this.ensureConfigured();
     const compressed = filename ? await this.compressBuffer(buffer, filename) : buffer;
-    const publicId = filename ? path.parse(filename).name : undefined;
+    // Append a unique suffix so two uploads with the same filename (e.g.
+    // "Кусачки.png" for different brands) do NOT overwrite each other in
+    // Cloudinary. The readable name is kept as a prefix for the media library.
+    const publicId = filename
+      ? `${path.parse(filename).name}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`
+      : undefined;
     const res = await new Promise<UploadApiResponse>((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         { folder, resource_type: 'image', public_id: publicId, quality: 'auto:best' },
@@ -88,7 +93,12 @@ export class UploadsService {
   /** Upload a video file to Cloudinary (resource_type: 'video'). */
   async uploadVideo(buffer: Buffer, filename?: string, folder?: string): Promise<UploadedImage> {
     this.ensureConfigured();
-    const publicId = filename ? path.parse(filename).name : undefined;
+    // Append a unique suffix so two uploads with the same filename (e.g.
+    // "Кусачки.png" for different brands) do NOT overwrite each other in
+    // Cloudinary. The readable name is kept as a prefix for the media library.
+    const publicId = filename
+      ? `${path.parse(filename).name}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`
+      : undefined;
     const res = await new Promise<UploadApiResponse>((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         { folder: folder || 'videos', resource_type: 'video', public_id: publicId },
