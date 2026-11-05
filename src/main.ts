@@ -36,7 +36,10 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      forbidNonWhitelisted: true,
+      // Keep the API tolerant: unknown props are stripped (whitelist) rather
+      // than rejected with 400, so an admin build that sends extra fields
+      // (e.g. landing-content keys) still saves instead of erroring out.
+      forbidNonWhitelisted: false,
       transform: true,
       transformOptions: { enableImplicitConversion: true },
     }),
